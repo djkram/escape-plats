@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ESCAPE PLATS — Joc de nit</title>
+<style>
+:root{
+  --bg:#04070a;
+  --bg2:#0a1014;
+  --green:#3dff9e;
+  --green-dim:#1f8f59;
+  --green-soft:rgba(61,255,158,.14);
+  --amber:#ffcc33;
+  --red:#ff4d5e;
+  --txt:#d8ffe9;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--mono)}
+body{-webkit-font-smoothing:antialiased}
+
+/* ---------- fons ---------- */
+#bg{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(120vmax 80vmax at 50% -10%,rgba(61,255,158,.10),transparent 60%),
+    radial-gradient(80vmax 60vmax at 100% 110%,rgba(61,255,158,.06),transparent 60%),
+    var(--bg);
+}
+#grid{position:fixed;inset:0;z-index:0;opacity:.20;
+  background-image:linear-gradient(rgba(61,255,158,.18) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(61,255,158,.18) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(70vmax 60vmax at 50% 45%,#000 20%,transparent 85%);
+  -webkit-mask-image:radial-gradient(70vmax 60vmax at 50% 45%,#000 20%,transparent 85%);
+}
+#scan{position:fixed;inset:0;z-index:900;pointer-events:none;opacity:.35;
+  background:repeating-linear-gradient(180deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.45) 2px 4px);
+  mix-blend-mode:multiply}
+#vig{position:fixed;inset:0;z-index:901;pointer-events:none;
+  box-shadow:inset 0 0 25vmax rgba(0,0,0,.85)}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;top:0;left:0;right:0;z-index:800;display:flex;align-items:center;
+  min-height:15vmin;gap:2vmin;padding:1.6vmin 2.4vmin;font-size:1.55vmin;letter-spacing:.18em;
+  color:var(--green-dim);text-transform:uppercase;pointer-events:none}
+#hud .brand{color:var(--green);text-shadow:0 0 12px rgba(61,255,158,.5);
+  align-self:flex-start;margin-top:1.6vmin}   /* alineat a dalt amb #counter (3.2vmin) */
+#hud .spacer{flex:1}
+#globalTimer{position:absolute;top:2.8vmin;left:50%;display:flex;align-items:center;gap:1.8vmin;
+  transform:translateX(-50%);pointer-events:auto;white-space:nowrap;z-index:2}
+#rail{position:absolute;top:1.2vmin;right:15vmin;display:flex;gap:1.1vmin;align-items:center;pointer-events:none}
+#rail .slot{width:5.2vmin;height:5.2vmin;border:2px solid var(--green-dim);border-radius:.6vmin;
+  display:flex;align-items:center;justify-content:center;font-size:2.9vmin;font-weight:700;
+  color:var(--green);background:rgba(61,255,158,.05);transition:.35s}
+#rail .slot.on{border-color:var(--green);box-shadow:0 0 18px rgba(61,255,158,.45);background:rgba(61,255,158,.13)}
+#rail .slot .q{color:var(--green-dim);font-size:2.4vmin}
+
+/* ---------- pantalles ---------- */
+#stage{position:relative;z-index:10;height:100%;display:flex;align-items:center;justify-content:center;padding:22vmin 6vmin 9vmin}
+.screen{display:none;width:100%;max-width:150vmin;animation:fade .45s ease both}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(1.6vmin)}to{opacity:1;transform:none}}
+
+.tag{display:inline-block;font-size:1.7vmin;letter-spacing:.35em;color:#04120b;background:var(--green);
+  padding:.55vmin 1.6vmin;border-radius:.4vmin;text-transform:uppercase;font-weight:700;margin-bottom:2.2vmin}
+.tag.alt{background:none;color:var(--amber);border:1px solid var(--amber)}
+h1{font-size:8.5vmin;line-height:.98;letter-spacing:-.01em;color:var(--green);
+  text-shadow:0 0 30px rgba(61,255,158,.35);text-transform:uppercase}
+h2{font-size:5.6vmin;line-height:1.02;color:var(--green);text-transform:uppercase;
+  text-shadow:0 0 22px rgba(61,255,158,.28);margin-bottom:2.4vmin}
+h3{font-size:2.4vmin;letter-spacing:.28em;color:var(--amber);text-transform:uppercase;margin-bottom:1.2vmin}
+p{font-size:2.9vmin;line-height:1.5;max-width:105vmin}
+p+p{margin-top:1.8vmin}
+.lead{font-size:3.4vmin;line-height:1.45}
+.dim{color:#7fbfa0}
+.big{font-size:4.4vmin;line-height:1.35;color:#fff}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:4vmin;align-items:start}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:2.4vmin}
+.card{border:1px solid rgba(61,255,158,.3);border-radius:1vmin;padding:2.4vmin 2.8vmin;
+  background:linear-gradient(180deg,rgba(61,255,158,.07),rgba(61,255,158,.02))}
+.card h3{margin-bottom:1.4vmin}
+ol,ul{margin-left:3vmin;font-size:2.2vmin;line-height:1.55}
+ol li,ul li{margin-bottom:.7vmin}
+.meta{display:flex;gap:4vmin;flex-wrap:wrap;font-size:2.1vmin;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--green-dim);margin-bottom:2.6vmin}
+.meta b{color:var(--green);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:2.3vmin}
+th,td{padding:1.1vmin 1.4vmin;text-align:left;border-bottom:1px solid rgba(61,255,158,.18)}
+th{color:var(--amber);font-size:1.8vmin;letter-spacing:.22em;text-transform:uppercase}
+td.num{text-align:right;color:var(--green);font-weight:700;font-size:2.7vmin}
+
+/* ---------- enigma ---------- */
+.enigma{border:2px solid var(--green-dim);border-radius:1.4vmin;padding:3.4vmin 5vmin;
+  background:rgba(61,255,158,.05);text-align:center;position:relative}
+.enigma .verse{font-size:3.6vmin;line-height:1.55;color:#fff;white-space:pre-line}
+.answer{display:flex;justify-content:center;align-items:center;gap:1.4vmin;margin-top:2.4vmin}
+.answer input{width:10vmin;height:8vmin;border:2px solid var(--green-dim);border-radius:.8vmin;
+  background:rgba(61,255,158,.06);color:var(--green);font-family:var(--mono);font-size:5vmin;
+  text-align:center;outline:none}
+.answer input:focus{border-color:var(--green);box-shadow:0 0 18px rgba(61,255,158,.3)}
+.proof-keypad{display:grid;grid-template-columns:repeat(3,11vmin);gap:1vmin;justify-content:center;margin:2vmin auto 0}
+.proof-keypad button{height:7vmin;font-size:3.5vmin;color:var(--green);background:rgba(61,255,158,.06);
+  border:2px solid rgba(61,255,158,.28);border-radius:.8vmin}
+.proof-keypad button[data-proof-key="C"],.proof-keypad button[data-proof-key="OK"]{font-size:1.7vmin;letter-spacing:.08em}
+.proof-keypad button:hover{background:rgba(61,255,158,.18);border-color:var(--green)}
+.proof-display{min-height:7vmin;margin-top:1.5vmin;color:var(--green);font-size:5vmin;letter-spacing:.2em}
+.answer-status{min-height:3.5vmin;margin-top:1.2vmin;font-size:2.4vmin;letter-spacing:.16em;text-transform:uppercase}
+.answer-status.err{color:var(--red)}
+.answer-status.ok{color:var(--green)}
+.choices{display:grid;grid-template-columns:repeat(2,1fr);gap:1.2vmin;margin-top:2.4vmin}
+.choice{font-family:var(--mono);font-size:2.3vmin;text-align:left;color:var(--txt);
+  background:rgba(61,255,158,.05);border:1px solid rgba(61,255,158,.3);border-radius:.7vmin;
+  padding:1.4vmin 1.8vmin}
+.choice.selected{color:#04120b;background:var(--green);border-color:var(--green)}
+.solution{margin-top:1.6vmin;min-height:11vmin;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.solution .num{font-size:11vmin;font-weight:800;color:var(--green);line-height:1;
+  text-shadow:0 0 40px rgba(61,255,158,.55);animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.hidden{display:none!important}
+
+/* ---------- botons ---------- */
+button{font-family:var(--mono);cursor:pointer}
+.btn{background:none;border:2px solid var(--green-dim);color:var(--green);
+  font-size:2vmin;letter-spacing:.2em;text-transform:uppercase;padding:1.3vmin 2.6vmin;
+  border-radius:.7vmin;transition:.18s}
+.btn:hover{border-color:var(--green);background:var(--green-soft);box-shadow:0 0 20px rgba(61,255,158,.25)}
+.btn.amber{border-color:rgba(255,204,51,.5);color:var(--amber)}
+.btn.amber:hover{border-color:var(--amber);background:rgba(255,204,51,.12)}
+.btnrow{display:flex;gap:1.6vmin;flex-wrap:wrap;justify-content:center;margin-top:2.6vmin}
+
+/* ---------- candau ---------- */
+.lockwrap{display:grid;grid-template-columns:1fr auto;gap:6vmin;align-items:center}
+.display{display:flex;gap:2vmin;justify-content:center;margin-bottom:3vmin}
+.display .d{width:14vmin;height:19vmin;border:3px solid var(--green-dim);border-radius:1.2vmin;
+  display:flex;align-items:center;justify-content:center;font-size:11vmin;font-weight:800;
+  color:var(--green);background:rgba(61,255,158,.06);text-shadow:0 0 30px rgba(61,255,158,.5)}
+.display .d.filled{border-color:var(--green);box-shadow:0 0 26px rgba(61,255,158,.3)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4vmin;width:46vmin}
+.keypad button{height:11vmin;font-size:5vmin;font-weight:700;color:var(--green);
+  background:rgba(61,255,158,.06);border:2px solid rgba(61,255,158,.28);border-radius:1vmin;transition:.12s}
+.keypad button:hover{background:rgba(61,255,158,.18);border-color:var(--green)}
+.keypad button:active{transform:scale(.94)}
+.keypad button.ok{color:#04120b;background:var(--green);border-color:var(--green);font-size:3vmin;letter-spacing:.15em}
+.keypad button.clr{color:var(--red);border-color:rgba(255,77,94,.4);font-size:3vmin;letter-spacing:.15em}
+.operation-screen{max-width:125vmin;padding-top:1vmin}
+.operation-screen h2{font-size:4.6vmin;margin-bottom:.8vmin}
+.operation-screen .operation-formula{font-size:7.8vmin!important;margin:1vmin 0!important;white-space:nowrap}
+.operation-screen .lead{font-size:2.4vmin;line-height:1.25}
+.operation-screen > p.dim{font-size:2vmin;margin-top:1vmin}
+.operation-layout{display:grid;grid-template-columns:minmax(0,1fr) 34vmin;gap:6vmin;align-items:center;
+  width:100%;max-width:115vmin;margin:2vmin auto 0}
+.operation-copy{text-align:center}
+.operation-controls{display:flex;flex-direction:column;align-items:center}
+.operation-screen .display{gap:1vmin;margin:1.4vmin 0 1.2vmin}
+.operation-screen .display .d{width:10vmin;height:12vmin;font-size:7vmin}
+.operation-screen .keypad{width:30vmin;gap:.8vmin;margin:0 auto}
+.operation-screen .keypad button{height:6.5vmin;font-size:3.5vmin}
+.operation-screen .keypad button.ok,.operation-screen .keypad button.clr{font-size:1.6vmin}
+.operation-screen .status{font-size:2vmin;min-height:3vmin}
+.status{text-align:center;font-size:2.6vmin;letter-spacing:.22em;text-transform:uppercase;min-height:4vmin;margin-top:1vmin}
+.status.err{color:var(--red)}
+.status.ok{color:var(--green)}
+.shake{animation:shake .45s}
+@keyframes shake{10%,90%{transform:translateX(-1.2vmin)}30%,70%{transform:translateX(1.8vmin)}50%{transform:translateX(-2.4vmin)}}
+.unlocked{text-align:center}
+.screen > .unlocked{width:100%;max-width:110vmin;margin:0 auto;text-align:center}
+.screen > .unlocked .tag,.screen > .unlocked h2,.screen > .unlocked p{margin-left:auto;margin-right:auto}
+.unlocked .msg{font-size:5vmin;color:var(--green);text-transform:uppercase;
+  text-shadow:0 0 40px rgba(61,255,158,.6);animation:pop .6s cubic-bezier(.2,1.6,.4,1) both}
+#flash{position:fixed;inset:0;z-index:950;background:var(--green);opacity:0;pointer-events:none}
+#flash.go{animation:flash .7s ease-out}
+@keyframes flash{0%{opacity:.75}100%{opacity:0}}
+
+/* ---------- widgets ---------- */
+.widget{margin-top:3vmin;display:flex;align-items:center;gap:2.6vmin;flex-wrap:wrap}
+.clock{font-size:11vmin;font-weight:800;color:var(--green);line-height:1;
+  text-shadow:0 0 30px rgba(61,255,158,.4);font-variant-numeric:tabular-nums}
+.clock.warn{color:var(--amber);text-shadow:0 0 30px rgba(255,204,51,.5)}
+.clock.over{color:var(--red);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.score{font-size:14vmin;font-weight:800;color:var(--green);line-height:1;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 34px rgba(61,255,158,.45)}
+.score small{font-size:3.4vmin;color:var(--green-dim);letter-spacing:.2em}
+.bar{height:2.6vmin;border:2px solid var(--green-dim);border-radius:2vmin;overflow:hidden;margin-top:1.6vmin}
+.bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:.4s}
+
+/* ---------- portada / final ---------- */
+.center{text-align:center}
+.center p{margin-left:auto;margin-right:auto}
+.mission-intro{max-width:125vmin;margin:0 auto;text-align:center}
+.mission-intro p{margin-left:auto;margin-right:auto}
+.blink-cursor::after{content:"_";animation:blink 1s steps(2) infinite;color:var(--green)}
+.boot{font-size:2.2vmin;line-height:1.9;color:var(--green-dim);text-align:left;max-width:90vmin;margin:3vmin auto 0}
+.boot b{color:var(--green)}
+
+/* ---------- notes / menú ---------- */
+#notes{position:fixed;left:0;right:0;bottom:0;z-index:820;padding:1.6vmin 2.6vmin;
+  background:rgba(4,7,10,.94);border-top:1px solid rgba(255,204,51,.35);color:var(--amber);
+  font-size:1.9vmin;letter-spacing:.05em;display:none}
+#notes.on{display:block}
+#help{position:fixed;right:2.4vmin;bottom:2vmin;z-index:830;font-size:1.5vmin;color:#2c5c45;letter-spacing:.14em}
+#clock{font-size:2.6vmin;font-weight:700;color:var(--green);letter-spacing:.08em;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 16px rgba(61,255,158,.5)}
+#globalTimer #clock{font-size:6.2vmin;line-height:1;letter-spacing:.04em}
+#globalTimer #clock{font-size:14vmin}
+#clock.warn{color:var(--amber);text-shadow:0 0 16px rgba(255,204,51,.5)}
+#clock.danger{color:var(--red);text-shadow:0 0 18px rgba(255,77,94,.6);animation:blink 1s steps(2) infinite}
+#clock.paused{opacity:.45;animation:none}
+#clockToggle{font-size:1.35vmin;padding:.7vmin 1.1vmin;border-width:1px}
+#globalTimer #clockToggle{flex:none;white-space:nowrap}
+#counter{position:absolute;top:3.2vmin;right:2.4vmin;min-width:8vmin;text-align:right}
+#elapsed{position:absolute;top:7.4vmin;left:2.4vmin;display:flex;align-items:baseline;gap:.9vmin;
+  font-size:3.4vmin;font-weight:700;color:var(--green);letter-spacing:.06em;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(61,255,158,.35)}
+#elapsed i{font-style:normal;font-size:1.4vmin;font-weight:400;letter-spacing:.18em;color:var(--green-dim)}
+#elapsed.paused{opacity:.45}
+[data-startclock]{font-size:3.2vmin;padding:2vmin 3.6vmin}
+#menu{position:fixed;inset:0;z-index:940;background:rgba(4,7,10,.97);display:none;
+  padding:6vmin;overflow:auto}
+#menu.on{display:block}
+#menu h3{margin-bottom:3vmin}
+#menu .list{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2vmin}
+#menu .list button{text-align:left;padding:1.4vmin 2vmin;font-size:1.9vmin;color:var(--txt);
+  background:rgba(61,255,158,.05);border:1px solid rgba(61,255,158,.22);border-radius:.6vmin}
+#menu .list button:hover{background:rgba(61,255,158,.16);border-color:var(--green);color:var(--green)}
+#menu .list button i{color:var(--green-dim);font-style:normal;margin-right:1.2vmin}
+#prog{position:fixed;left:0;bottom:0;height:.5vmin;background:var(--green);z-index:860;
+  box-shadow:0 0 14px var(--green);transition:width .35s}
+@media (max-width:900px),(orientation:portrait){
+  /* Barra d'estat de dues files, amb els extrems alineats:
+       fila 1  ·  [rellotge gran + pausa] centrat        · comptador de pantalles a la dreta
+       fila 2  ·  temps de joc a l'esquerra              · marcador de xifres a la dreta   */
+  #hud{min-height:18.5vmin;padding:1.2vmin 2vmin;background:var(--bg);
+    border-bottom:1px solid rgba(61,255,158,.16);box-shadow:0 .6vmin 2.4vmin rgba(0,0,0,.7)}
+  #hud .brand{display:none}
+  #globalTimer{top:.9vmin;gap:1.2vmin}
+  #globalTimer #clock{font-size:8.5vmin;white-space:nowrap}
+  #clockToggle{font-size:1.5vmin;padding:.8vmin 1.2vmin}
+  #counter{top:1.6vmin;right:2vmin;font-size:1.6vmin}
+  #elapsed{top:11.6vmin;left:2vmin;font-size:4.2vmin}
+  #elapsed i{font-size:2vmin}
+  #rail{top:11.4vmin;right:2vmin;gap:.8vmin}
+  #rail .slot{width:5vmin;height:5vmin;font-size:2.8vmin}
+  #rail .slot .q{font-size:2.2vmin}
+  #stage{padding:21vmin 4vmin 8vmin}
+  .screen h1{font-size:7vmin}
+  .screen h2{font-size:5vmin}
+  .screen .cols,.screen .cols3,.screen .lockwrap,.screen .operation-layout{grid-template-columns:1fr!important}
+  .screen .cols3{gap:1.5vmin}
+  .operation-controls{margin-top:1vmin}
+}
+
+/* ---------- navegació tàctil ----------
+   Al mòbil no hi ha teclat: barra inferior amb anterior / índex / següent.
+   Només apareix en pantalles tàctils, o sigui que a la projecció no es veu. */
+#touchnav{position:fixed;left:0;right:0;bottom:0;z-index:945;display:none;
+  justify-content:space-between;align-items:center;gap:2vmin;
+  padding:2vmin 2.4vmin 2.8vmin;pointer-events:auto;
+  background:linear-gradient(180deg,rgba(4,7,10,0),rgba(4,7,10,.94) 45%)}
+#touchnav button{flex:none;min-width:17vmin;height:11vmin;font-size:5.5vmin;line-height:1;
+  color:var(--green);background:rgba(61,255,158,.08);
+  border:2px solid rgba(61,255,158,.32);border-radius:1.2vmin}
+#touchnav button:active{background:rgba(61,255,158,.24);border-color:var(--green)}
+#touchnav .mid{min-width:26vmin;font-size:2.8vmin;letter-spacing:.16em;text-transform:uppercase}
+
+/* ---------- pantalla vertical (mòbil o finestra estreta) ----------
+   En vertical el vmin és l'amplada: tot el text queda petit i sobra alçada.
+   Aquí es puja l'escala de tot, els colors passen a graella 2×2 i #stage
+   es pot desplaçar si una pantalla molt plena no hi cap (només en vertical:
+   en 16:9, que és com es projecta, res d'això no s'aplica). */
+@media (orientation:portrait){
+  #help{display:none}
+  #stage{flex-direction:column;justify-content:flex-start;align-items:stretch;
+    overflow-y:auto;padding:21vmin 5vmin 6vmin}
+  .screen{max-width:none}
+  .screen.active{margin-top:auto;margin-bottom:auto}   /* centrat sense retallar */
+
+  .screen h1{font-size:14vmin}
+  .screen h2{font-size:9vmin}
+  .screen h3{font-size:3.6vmin}
+  .screen .tag{font-size:2.8vmin;margin-bottom:3vmin}
+  .screen p{font-size:4.4vmin}
+  .screen .lead{font-size:5vmin}
+  .screen .big{font-size:6vmin}
+  .screen ol,.screen ul{font-size:3.8vmin;margin-left:5vmin}
+  .screen .meta{font-size:3.2vmin;gap:3vmin}
+  .screen table{font-size:3.8vmin}
+  .screen th{font-size:3vmin}
+  .screen td.num{font-size:4.4vmin}
+  .screen .card{padding:3.6vmin 4vmin}
+  .screen .btn{font-size:3.4vmin;padding:2vmin 3.4vmin}
+  .screen .boot{font-size:3.6vmin;max-width:none;margin-top:4vmin}
+
+  .screen .grid4{grid-template-columns:repeat(2,1fr)!important;gap:3vmin}
+  .screen .choices{grid-template-columns:1fr}
+
+  .screen .enigma{padding:4vmin}
+  .screen .enigma .verse{font-size:5vmin}
+  .screen .choice{font-size:3.8vmin}
+  .screen .answer-status{font-size:3.4vmin}
+  .screen .proof-keypad{grid-template-columns:repeat(3,18vmin);gap:1.6vmin}
+  .screen .proof-keypad button{height:11vmin;font-size:5.5vmin}
+  .screen .proof-keypad button[data-proof-key="C"],
+  .screen .proof-keypad button[data-proof-key="OK"]{font-size:2.6vmin}
+  .screen .proof-display{font-size:8vmin;min-height:10vmin}
+
+  .screen .display .d{width:16vmin;height:21vmin;font-size:12vmin}
+  .screen .keypad{width:62vmin;margin:4vmin auto 0}
+  .screen .keypad button{height:14vmin;font-size:6.5vmin}
+  .screen .keypad button.ok,.screen .keypad button.clr{font-size:3.4vmin}
+  .screen .status{font-size:3.4vmin}
+  .screen .unlocked .msg{font-size:6.5vmin}
+
+  .operation-screen .operation-formula{font-size:8vmin!important;margin:2.5vmin 0!important}
+  .operation-screen .lead{font-size:4.4vmin}
+  .operation-screen > p.dim{font-size:3.6vmin}
+  .operation-screen .display{margin:3vmin 0 2vmin}
+  .operation-screen .display .d{width:14vmin;height:18vmin;font-size:10vmin}
+  .operation-screen .keypad{width:56vmin}
+  .operation-screen .keypad button{height:12vmin;font-size:6vmin}
+  .operation-screen .keypad button.ok,.operation-screen .keypad button.clr{font-size:3vmin}
+  .operation-screen .status{font-size:3.4vmin}
+
+  #menu{padding:5vmin 4vmin}
+  #menu h3{font-size:4vmin;margin-bottom:3vmin}
+  #menu .list{grid-template-columns:1fr;gap:1.6vmin}
+  #menu .list button{font-size:3.4vmin;padding:2.6vmin 3vmin}
+}
+
+/* ---------- dispositius tàctils ---------- */
+@media (pointer:coarse){
+  #touchnav{display:flex}
+  #stage{padding-bottom:17vmin;overflow-y:auto}
+  #menu{padding-bottom:18vmin}
+  #help{display:none}
+}
+</style>
+</head>
+<body>
+<div id="bg"></div><div id="grid"></div>
+<div id="hud">
+  <span class="brand">◈ ESCAPE PLATS · PROTOCOL NENSRENTAPLATS</span>
+  <span class="spacer"></span>
+  <div id="rail"></div>
+  <span class="spacer"></span>
+  <div id="globalTimer">
+    <span id="clock" class="hidden">⏱ --:--</span>
+    <button id="clockToggle" class="btn amber" type="button">Pausa</button>
+  </div>
+  <span id="counter">00 / 00</span>
+  <span id="elapsed" class="hidden"><i>temps de joc</i><b data-up>0:00</b></span>
+</div>
+<div id="stage"></div>
+<div id="notes"></div>
+<div id="help">← → navegar · P pausa rellotge · +/− 5 min · M menú · N notes · F pantalla · S so</div>
+<div id="menu"><h3>Índex de pantalles</h3><div class="list"></div></div>
+<div id="prog"></div>
+<div id="touchnav">
+  <button type="button" data-nav="prev" aria-label="Pantalla anterior">‹</button>
+  <button type="button" class="mid" data-nav="menu">☰ Índex</button>
+  <button type="button" data-nav="next" aria-label="Pantalla següent">›</button>
+</div>
+<div id="scan"></div><div id="vig"></div>
+<div id="flash"></div>
+
+<script>
+/* ==================================================================
+   ⚙️  CONFIGURACIÓ — canvia aquí els enigmes, els gustos i el tresor
+   ================================================================== */
+const CONFIG = {
+
+  // ---- Els 4 enigmes opcionals. Una resposta correcta dona temps extra.
+  enigmes: [
+    { verse:"En línia recta des d'Avià, quin d'aquests llocs queda més a prop?",
+      opcions:["Barcelona","Girona","Lleida","Andorra la Vella"], solucio:3,
+      pista:"Pensa en el Berguedà i el Pirineu." },
+
+    { verse:"Un quadrat té un perímetre de 24 centímetres.\nQuant mesura cadascun dels seus costats?",
+      opcions:["4 centímetres","6 centímetres","8 centímetres","12 centímetres"], solucio:1,
+      pista:"Divideix el perímetre entre els quatre costats." },
+
+    { verse:"Quantes franges té la senyera en total?",
+      opcions:["Set","Vuit","Nou","Deu"], solucio:2,
+      pista:"Compta les franges grogues i vermelles." },
+
+    { verse:"A quina població se celebra la Patum?",
+      opcions:["Berga","Vic","Olot","Manresa"], solucio:0,
+      pista:"És una festa tradicional del Berguedà." }
+  ],
+
+      // ---- Xifres que els adults donen després de superar cada prova.
+      codisProva: ["4","8","2","6"],
+      minutsEnigma: 5,
+
+  // ---- Minuts totals del compte enrere (s'activa en trobar les polseres)
+  minutsTotals: 60,
+
+  // ---- Prova final: què tasta cada grup (l'ordre és el de CONFIG.grups).
+  //      El valor NO s'escriu aquí: es llegeix de taulaCodis.
+  gustos: [
+    { lletra:"A", grup:"Grup 1", aliment:"Llimona"  },
+    { lletra:"B", grup:"Grup 2", aliment:"Formatge" },
+    { lletra:"C", grup:"Grup 3", aliment:"Iogurt"   },
+    { lletra:"D", grup:"Grup 4", aliment:"Xocolata" }
+  ],
+  // ---- Taula que veuen els nens: 9 aliments, valors 1-9 sense repetir.
+  //      Els que NO es tasten són esquers i no es donen a ningú (salsa picant,
+  //      fuet i anxova hi són per fer patir). L'ordre és el de la projecció.
+  taulaCodis: [
+    ["Xocolata",7],["Plàtan",9],["Llimona",4],
+    ["Fuet",2],["Formatge",8],["Poma",6],
+    ["Anxova",1],["Iogurt",3],["Salsa picant",5]
+  ],
+  operacioText: "A × B × C + D",
+  operacio: (A,B,C,D) => A*B*C + D,
+
+  // ---- On és el tresor (es revela quan s'introdueix el codi mestre)
+  tresorLloc: "DINS EL FORN DE LA CUINA",
+  tresorQue:  "12 VALS OFICIALS: AQUESTA NIT NO RENTEU CAP PLAT",
+
+  // ---- Grups: només colors. Els nens descobreixen el seu grup
+  //      pel color de la polsera que troben.
+  grups: [
+    ["Grup 1","Blau",    "#4da6ff"],
+    ["Grup 2","Groc",    "#ffcc33"],
+    ["Grup 3","Taronja", "#ff8c42"],
+    ["Grup 4","Rosa",    "#ff6fae"]
+  ]
+};
+
+const CODI4 = CONFIG.codisProva.join("");
+const valorAliment = nom => (CONFIG.taulaCodis.find(r=>r[0]===nom)||[,0])[1];
+const CODI3 = String(CONFIG.operacio(...CONFIG.gustos.map(g=>valorAliment(g.aliment))));
+
+/* ==================================================================
+   SO
+   ================================================================== */
+let soOn = true, actx = null;
+function beep(freq, dur, type, vol){
+  if(!soOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type||"square"; o.frequency.value = freq;
+    g.gain.value = vol||.06;
+    o.connect(g); g.connect(actx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + (dur||.08));
+    o.stop(actx.currentTime + (dur||.08));
+  }catch(e){}
+}
+const sKey  = ()=>beep(680,.05,"square",.05);
+const sErr  = ()=>{beep(150,.18,"sawtooth",.08); setTimeout(()=>beep(110,.28,"sawtooth",.08),150);};
+const sOk   = ()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,"triangle",.07),i*110));};
+const sTick = ()=>beep(880,.06,"sine",.05);
+
+/* ==================================================================
+   COMPTE ENRERE GLOBAL
+   ================================================================== */
+const GT = {
+  left: CONFIG.minutsTotals*60, up:0, id:null, started:false, el:null, toggleEl:null, upEl:null,
+  init(){
+    this.el = document.getElementById("clock");
+    this.upEl = document.getElementById("elapsed");
+    this.toggleEl = document.getElementById("clockToggle");
+    this.toggleEl.onclick = ()=>this.toggle();
+    this.paint();
+  },
+  start(){
+    if(this.started) return;
+    this.started = true;
+    this.el.classList.remove("hidden");
+    this.upEl.classList.remove("hidden");
+    this.resume(); sOk();
+  },
+  resume(){ if(this.id || !this.started) return; this.id = setInterval(()=>this.tick(),1000); this.paint(); },
+  pause(){ clearInterval(this.id); this.id = null; this.paint(); },
+  toggle(){ if(!this.started){ this.start(); return; } this.id ? this.pause() : this.resume(); },
+  add(m){ this.left = Math.max(0, this.left + m*60); this.paint(); },
+  tick(){
+    this.left--; this.up++;
+    if(this.left <= 0){ this.left = 0; this.pause(); alarma(); }
+    else if(this.left === 600 || this.left === 300 || this.left === 60) beep(880,.5,"sine",.07);
+    this.paint();
+  },
+  paint(){
+    if(!this.el) return;
+    const m = Math.floor(this.left/60), s = this.left%60;
+    this.el.textContent = (this.left===0 ? "⏱ TEMPS ESGOTAT" : "⏱ " + m + ":" + String(s).padStart(2,"0"));
+    this.el.className = (this.started?"":"hidden") +
+      (this.left<=300 ? " danger" : this.left<=900 ? " warn" : "") +
+      (this.started && !this.id && this.left>0 ? " paused" : "");
+    if(this.toggleEl) this.toggleEl.textContent = !this.started || this.id ? "Pausa" : "Reprendre";
+    if(this.upEl){
+      this.upEl.querySelector("[data-up]").textContent =
+        Math.floor(this.up/60) + ":" + String(this.up%60).padStart(2,"0");
+      this.upEl.classList.toggle("hidden", !this.started);
+      this.upEl.classList.toggle("paused", this.started && !this.id);
+    }
+  },
+  restant(){ const m=Math.floor(this.left/60), s=this.left%60; return m+" min "+String(s).padStart(2,"0")+" s"; }
+};
+function alarma(){ [0,300,600,900].forEach(d=>setTimeout(()=>beep(180,.35,"sawtooth",.09),d)); }
+
+/* ==================================================================
+   PANTALLES
+   ================================================================== */
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const regles = arr => "<ol>"+arr.map(r=>"<li>"+r+"</li>").join("")+"</ol>";
+
+function provaHTML(p){
+  return `
+  <span class="tag">Prova ${p.num} / 4</span>
+  <h2>${p.titol}</h2>
+  <div class="meta">
+    <span>Lloc <b>${p.lloc}</b></span>
+    <span>Juguen <b>${p.participants}</b></span>
+    ${p.durada?`<span>Temps <b>${p.durada}</b></span>`:""}
+  </div>
+  <div class="cols">
+    <div class="card">
+      <h3>Objectiu</h3>
+      <p style="font-size:2.5vmin">${p.objectiu}</p>
+      ${p.material?`<h3 style="margin-top:2.4vmin">Material</h3><ul>${p.material.map(m=>"<li>"+m+"</li>").join("")}</ul>`:""}
+      ${p.widget?`<div id="w-${p.id}"></div>`:""}
+    </div>
+    <div class="card">
+      <h3>Regles</h3>
+      ${regles(p.regles)}
+    </div>
+  </div>`;
+}
+
+const SCREENS = [
+
+{ id:"portada", menu:"Portada", nota:"Tothom assegut, llums apagats. Deixa la pantalla amb el cursor parpellejant mentre arriben.", html:`
+  <div class="center">
+    <span class="tag alt">Protocol NENSRENTAPLATS · Torn de nit</span>
+    <h1>Escape<br>Plats</h1>
+    <p class="lead dim" style="margin-top:3vmin">Estat del sistema: <span style="color:var(--red)">TORN DE PLATS ASSIGNAT — 12 NENS</span></p>
+    <div class="boot">
+      &gt; carregant llista de tasques nocturnes...<br>
+      &gt; rentar <b>47 plats</b>, <b>36 gots</b>, <b>3 olles cremades</b><br>
+      &gt; responsables assignats: <b>tots els nens de la casa</b><br>
+      &gt; missió pendent: <b>trobar les polseres</b><span class="blink-cursor"></span>
+    </div>
+  </div>`},
+
+{ id:"missio", menu:"La missió", nota:"Llegeix el text amb veu solemne. Insisteix: cap grup pot desactivar el protocol sol.", html:`
+  <div class="mission-intro">
+  <span class="tag">Missió</span>
+  <h2>Desactiveu el Protocol NENSRENTAPLATS</h2>
+  <p class="big">Aquesta nit, el sistema us ha adjudicat la feina de rentar tots els plats del sopar.</p>
+  <p>Però el Protocol NENSRENTAPLATS té una escletxa: si treballeu tots junts, encara el podeu desactivar.</p>
+  <p>Comenceu amb <b style="color:var(--amber)">${CONFIG.minutsTotals} minuts</b>. En algunes proves podreu guanyar temps si resoleu correctament l'enigma.</p>
+  <p class="big" style="color:var(--red)">Si el rellotge arriba a zero, perdeu.</p>
+  <p class="dim">Prepareu-vos: el primer pas és trobar les polseres.</p>
+  </div>`},
+
+{ id:"polseres", menu:"Cerca de polseres", nota:"Zona: pista de vòlei, gespa, sala polivalent i sofàs. Cadascú només la seva. No diguis a ningú de quin grup és: ho dirà el color.", html:`
+  <div class="center">
+    <span class="tag">Missió 0</span>
+    <h2>Trobeu la vostra polsera</h2>
+    <p class="lead">Hi ha <b>12 polseres</b> amagades a fora.</p>
+    <p class="lead">Heu de trobar <b>totes les polseres amb el vostre nom</b>.</p>
+    <p class="big" style="color:var(--amber)">El temps corre. Si el rellotge arriba a zero, perdeu.</p>
+    <p class="big" style="margin-top:2.4vmin;color:var(--amber)">Ningú sap encara amb qui li tocarà jugar.</p>
+    <div class="btnrow"><button class="btn" data-startclock>▶ COMENÇA EL JOC</button></div>
+  </div>`},
+
+{ id:"grups", menu:"Els colors", nota:"Que s'agrupin pel color de la polsera. Encara no diguis quins grups juguen a cada prova.", html:`
+  <div class="center">
+    <span class="tag">Equips</span>
+    <h2>El color mana</h2>
+    <p class="lead">Mireu-vos la polsera: el <b>color</b> us diu de quin grup sou. Busqueu els vostres i poseu-vos junts.</p>
+    <div class="cols grid4" style="grid-template-columns:repeat(4,1fr);gap:2vmin;margin-top:3.5vmin">
+      ${CONFIG.grups.map(g=>`<div class="card" style="border-color:${g[2]}66;text-align:center">
+        <div style="width:100%;height:7vmin;border-radius:.8vmin;background:${g[2]};box-shadow:0 0 24px ${g[2]}88"></div>
+        <h3 style="color:${g[2]};margin-top:1.6vmin">${g[1]}</h3>
+        <p style="font-size:2.2vmin">${g[0]}</p></div>`).join("")}
+    </div>
+    <p class="dim" style="margin-top:3vmin">Cada grup jugarà <b>dues</b> de les quatre proves… però encara no sabeu quines.</p>
+  </div>`},
+
+{ id:"prova1", menu:"Prova 1 · Caçar la bandera", num:1,
+  nota:"3 adults defensen. Nen o nena tocat = congelat; un company el descongela.",
+  html:provaHTML({ id:"prova1", num:1, titol:"Caçar la bandera", lloc:"Pista de vòlei",
+    participants:"Blaus i grocs · contra 3 adults",
+    objectiu:"La bandera són les 3 pilotes. Recupereu-les i porteu-les a la base.",
+    regles:[
+      "Els sis nens poden sortir alhora.",
+      "Cada nen només pot portar una pilota.",
+      "Si un adult toca un nen, queda <b>congelat</b>.",
+      "Un company el pot alliberar tocant-lo.",
+      "Si cau o us prenen una pilota, torna al seu lloc.",
+      "Acaba quan les 3 pilotes són dins la base."
+    ]})},
+
+{ id:"term1", menu:"Resultat 1 · Enigma 1", kind:"proof", idx:0,
+  code:()=>CONFIG.codisProva[0],
+  titol:"Introduïu la xifra de la prova 1",
+  nota:"Introduïu la xifra que us han donat després de superar la prova.",
+  revelacio:enigmaBlock(0) },
+
+{ id:"prova2", menu:"Prova 2 · Culleres", num:2,
+  nota:"4 minuts. Hi juguen 3 adults, que només tenen UNA cullera.",
+  html:provaHTML({ id:"prova2", num:2, titol:"El relleu de les culleres", lloc:"Pendent de gespa",
+    participants:"Grocs i taronges · contra 3 adults", durada:"4 minuts",
+    objectiu:"Tenir <b>4 de les 6 pilotes</b> dins del recipient de dalt <b>alhora</b>.",
+    material:["6 pilotes de ping-pong","2 culleres per als nens","1 cullera per als adults","2 recipients"],
+    regles:[
+      "Dos nens pugen alhora, cadascun amb cullera i pilota.",
+      "En deixar la pilota a dalt, tornen i passen la cullera al següent.",
+      "Els sis nens s'han d'anar rellevant.",
+      "Els adults poden baixar pilotes del recipient de dalt.",
+      "Només UN adult cada vegada (només tenen una cullera).",
+      "Els tres adults també s'han d'anar rellevant.",
+      "Els adults només agafen pilotes que ja siguin dins del recipient.",
+      "Pilota que cau, torna al recipient d'on venia.",
+      "No es pot subjectar la pilota amb la mà.",
+      "Adults i nens no es poden tocar ni bloquejar."
+    ]})},
+
+{ id:"term2", menu:"Resultat 2 · Enigma 2", kind:"proof", idx:1,
+  code:()=>CONFIG.codisProva[1],
+  titol:"Introduïu la xifra de la prova 2",
+  nota:"Introduïu la xifra que us han donat després de superar la prova.",
+  revelacio:enigmaBlock(1) },
+
+{ id:"prova3", menu:"Prova 3 · Cursa dels camells", num:3,
+  nota:"Els taronges i roses competeixen físicament contra 3 adults en una cursa de camells.",
+  html:provaHTML({ id:"prova3", num:3, titol:"La cursa dels camells", lloc:"Sala polivalent",
+    participants:"Taronges i roses · contra 3 adults",
+    objectiu:"Feu avançar el vostre camell físic fins a la meta abans que els adults us aturin.",
+    regles:[
+      "Els nens i nenes fan avançar el camell físic per torns.",
+      "Els pots formen part del recorregut físic de la cursa.",
+      "Els 3 adults competeixen contra els nens i nenes.",
+      "La cursa acaba quan el camell arriba a la meta.",
+      "Els adults controlen els torns i decideixen quan s'ha superat la prova."
+    ]})},
+
+{ id:"term3", menu:"Resultat 3 · Enigma 3", kind:"proof", idx:2,
+  code:()=>CONFIG.codisProva[2],
+  titol:"Introduïu la xifra de la prova 3",
+  nota:"Introduïu la xifra que us han donat després de superar la prova.",
+  revelacio:enigmaBlock(2) },
+
+{ id:"prova4", menu:"Prova 4 · Puzle", num:4,
+  nota:"Pistes permeses: «fred», «tebi», «calent». En completar-lo, aneu al resultat de la prova.",
+  html:provaHTML({ id:"prova4", num:4, titol:"El puzle perdut", lloc:"Jardí i sofàs exteriors",
+    participants:"Roses i blaus",
+    objectiu:"Trobar les <b>12 peces</b> amagades pel jardí i muntar el puzle sencer.",
+    material:["12 peces grans de puzle","Base del puzle sobre la taula dels sofàs"],
+    regles:[
+      "Els <b>roses</b> busquen les peces pel jardí.",
+      "Quan troben una peça, la porten a la zona dels sofàs.",
+      "Les <b>blaves</b> munten el puzle.",
+      "Els grans poden orientar-les <b>només parlant</b>.",
+      "Els grans no poden col·locar peces.",
+      "Els adults supervisen la recerca.",
+      "Pistes permeses: «fred», «tebi», «calent».",
+      "Acaba amb les 12 peces trobades i el puzle complet."
+    ]})},
+
+{ id:"term4", menu:"Resultat 4 · Enigma 4", kind:"proof", idx:3,
+  code:()=>CONFIG.codisProva[3],
+  titol:"Introduïu la xifra de la prova 4",
+  nota:"Introduïu la xifra que us han donat després de superar la prova.",
+  revelacio:enigmaBlock(3) },
+
+{ id:"resum", menu:"Els 4 números", nota:"Comprova que el marcador de dalt tingui els 4 dígits abans d'anar al terminal.", html:`
+  <div class="center">
+    <span class="tag alt">Codi de desactivació · 1 de 2</span>
+    <h2>Ordeneu les quatre xifres</h2>
+    <p class="lead">L'ordre és el de les proves:</p>
+    <p class="big" style="color:var(--green);letter-spacing:.2em;margin-top:2vmin">PROVA 1 · PROVA 2 · PROVA 3 · PROVA 4</p>
+    <p class="dim" style="margin-top:3vmin">Quan tingueu el codi, introduïu-lo al terminal del protocol.</p>
+  </div>`},
+
+{ id:"candau4", menu:"⌨ CODI 1 · 4 xifres", kind:"lock", digits:4, code:()=>CODI4,
+  nota:"Deixa que un nen tecleji. 3 errors → apareix el botó de PISTA.",
+  titol:"Codi de desactivació · Fase 1",
+  revelacio:`<h2 style="margin-top:2vmin">Fase 1 desbloquejada</h2>
+    <p class="lead">El protocol allibera l'últim fitxer: <b>EL CODI DELS GUSTOS</b>.</p>
+    <p class="lead">Quatre aliments secrets, una taula de valors i una operació us donaran el <b>codi mestre</b>.</p>`},
+
+{ id:"gustos", menu:"Prova final · Gustos", nota:"⚠️ Comprova al·lèrgies i intoleràncies ABANS de repartir els tastos (hi ha lactis i xocolata). Cada grup tasta una cosa diferent: reparteix-los sense que es vegin entre ells. La salsa picant NO es dona a ningú, només és un esquer de la taula.", html:`
+  <span class="tag">Prova final</span>
+  <h2>El codi dels gustos</h2>
+  <div class="cols">
+    <div>
+      <p style="font-size:2.5vmin">Cada grup tasta <b>un sabor secret diferent</b>.</p>
+      <p style="font-size:2.5vmin">Endevineu quin aliment us ha tocat i digueu-lo als altres.</p>
+      <p style="font-size:2.5vmin">Busqueu cada aliment a la taula de codis i convertiu-lo en número.</p>
+      <p style="font-size:2.5vmin;color:var(--amber)">Quan tingueu els quatre números, aneu a l'operació.</p>
+    </div>
+    <div class="card">
+      <h3>Qui és cada lletra</h3>
+      <table>
+        <tr><th>Polsera</th><th>Lletra</th></tr>
+        ${CONFIG.gustos.map((g,i)=>`<tr><td style="color:${CONFIG.grups[i][2]}">${CONFIG.grups[i][1]}</td><td class="num">${g.lletra}</td></tr>`).join("")}
+      </table>
+    </div>
+  </div>`},
+
+{ id:"taula", menu:"Taula de codis", nota:"Aquesta és la taula que veuen els nens. No diguis quins són els gustos!", html:`
+  <span class="tag">Taula de codis</span>
+  <h2>Cada aliment té un valor</h2>
+  <div class="cols3">
+    ${[0,1,2].map(c=>{
+      const n = Math.ceil(CONFIG.taulaCodis.length/3);
+      return `<div class="card"><table>
+      ${CONFIG.taulaCodis.slice(c*n,(c+1)*n).map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td></tr>`).join("")}
+    </table></div>`;
+    }).join("")}
+  </div>
+  <p class="dim center" style="margin-top:3vmin">Identifiqueu els quatre gustos, busqueu-ne els valors i col·loqueu-los a l'operació.</p>`},
+
+{ id:"operacio", menu:"L'operació final", kind:"operacio", nota:"Introduïu el resultat de l'operació. Si és correcte, s'obrirà la superprova." },
+
+{ id:"superfinal", menu:"SUPERPROVA · Piscina", nota:"Prepareu la piscina i superviseu sempre l'activitat. Han de recuperar totes les polseres de colors.", html:`
+  <div class="center">
+    <span class="tag alt">SUPERPROVA</span>
+    <h2>Recupereu les polseres</h2>
+    <p class="lead">Totes les polseres de colors són dins de la piscina.</p>
+    <p class="big" style="color:var(--amber)">Recupereu-les totes abans que s'acabi el temps.</p>
+    <p class="dim">Quan les tingueu, el Protocol NENSRENTAPLATS quedarà desactivat.</p>
+  </div>`},
+
+{ id:"final", menu:"Final", nota:"Aplaudiments. I aquesta nit, els plats els renta un adult.", html:`
+  <div class="center">
+    <span class="tag">Missió complerta</span>
+    <h1 style="font-size:7vmin">Els plats<br>us perdonen la vida</h1>
+    <div class="boot" style="text-align:center">
+      &gt; protocol NENSRENTAPLATS: <b style="color:var(--red)">DESACTIVAT</b><br>
+      &gt; 47 plats reassignats a: <b>ADULTS</b><br>
+      &gt; temps restant al rellotge: <b data-resta>—</b><br>
+      &gt; heu superat les 4 proves, trobat les 4 xifres,<br>
+      &nbsp;&nbsp;&nbsp;identificat els gustos secrets i resolt el codi final<br>
+      &gt; estat: <b>LLIURES</b><span class="blink-cursor"></span>
+    </div>
+  </div>`}
+];
+
+/* ==================================================================
+   RENDER
+   ================================================================== */
+const stage = document.getElementById("stage");
+const state = { i:0, digits:[null,null,null,null] };
+
+function enigmaBlock(idx){
+  const e = CONFIG.enigmes[idx];
+  const s = {idx:idx};
+  return `
+  <span class="tag" style="margin-top:2.4vmin">Enigma ${idx+1} — tria la resposta</span>
+  <div class="enigma">
+    <div class="verse">${esc(e.verse)}</div>
+    <div class="choices">
+      ${e.opcions.map((opcio,i)=>`<button class="choice" data-choice="${i}">${i+1}. ${opcio}</button>`).join("")}
+    </div>
+    <p class="answer-status" data-answer-status></p>
+    <div class="solution"><div class="hidden" data-sol>
+      <p class="big" style="color:var(--green)">+${CONFIG.minutsEnigma} minuts</p>
+      <p class="dim" style="font-size:2.2vmin;margin-top:1.4vmin">Temps recuperat</p>
+    </div></div>
+    <div class="btnrow">
+      <button class="btn amber" data-pista>Donar pista</button>
+      <button class="btn amber" data-passar>Passar</button>
+    </div>
+    <p class="dim hidden" data-pistatxt style="margin-top:2vmin;font-size:2.2vmin">💡 ${e.pista}</p>
+  </div>`;
+}
+
+function proofHTML(s){
+  return `
+  <div class="center">
+    <div data-proof-code>
+      <span class="tag alt">Xifra de la prova</span>
+      <h2>${s.titol}</h2>
+      <p class="lead">Introduïu el número que us han donat després de superar la prova.</p>
+      <div class="proof-display" data-proof-display>·</div>
+      <div class="proof-keypad" data-proof-keypad>
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-proof-key="${n}">${n}</button>`).join("")}
+        <button data-proof-key="C">Esborrar</button>
+        <button data-proof-key="0">0</button>
+        <button data-proof-key="OK">Enviar</button>
+      </div>
+      <p class="answer-status" data-proof-code-status></p>
+    </div>
+    <div class="hidden" data-proof-reveal>${s.revelacio}</div>
+  </div>`;
+}
+
+function lockHTML(s){
+  return `
+  <span class="tag alt">${s.titol}</span>
+  <div class="lockwrap" data-lockbody>
+    <div>
+      <div class="display" data-display>
+        ${Array.from({length:s.digits},()=>'<div class="d">·</div>').join("")}
+      </div>
+      <div class="status" data-status>${s.prompt || "Introduïu el codi de desactivació ("+s.digits+" xifres)"}</div>
+      <div class="btnrow hidden" data-hintrow><button class="btn amber" data-hint>Pista del sistema</button></div>
+    </div>
+    <div class="keypad" data-keypad>
+      ${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join("")}
+      <button class="clr" data-k="C">Esborrar</button>
+      <button data-k="0">0</button>
+      <button class="ok" data-k="OK">Enviar</button>
+    </div>
+  </div>
+  <div class="unlocked hidden" data-unlocked>
+    <div class="msg">✔ Codi acceptat</div>
+    ${s.revelacio}
+  </div>`;
+}
+
+function operacioHTML(){
+  const g = CONFIG.gustos;
+  return `
+  <div class="center operation-screen">
+    <span class="tag">Operació final</span>
+    <h2>Resoleu el codi</h2>
+    <div class="operation-layout">
+      <div class="operation-copy">
+          <p class="operation-formula" style="font-size:9vmin;color:var(--green);letter-spacing:.06em;margin:3vmin 0;
+            text-shadow:0 0 34px rgba(61,255,158,.4)">${CONFIG.operacioText} =</p>
+        <p class="lead dim">A, B, C i D són els valors dels quatre sabors secrets.</p>
+        <p class="dim">Introduïu el resultat amb el teclat.</p>
+      </div>
+      <div class="operation-controls">
+        <div class="display" data-op-display>${Array.from({length:CODI3.length},()=>'<div class="d">·</div>').join("")}</div>
+        <div class="keypad" data-op-keypad>
+          ${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-op-key="${n}">${n}</button>`).join("")}
+          <button class="clr" data-op-key="C">Esborrar</button>
+          <button data-op-key="0">0</button>
+          <button class="ok" data-op-key="OK">Enviar</button>
+        </div>
+      </div>
+    </div>
+    <p class="status" data-op-status></p>
+  </div>`;
+}
+
+function build(){
+  SCREENS.forEach((s,i)=>{
+    const d = document.createElement("div");
+    d.className = "screen"; d.id = "s"+i;
+    if(s.kind==="lock") d.innerHTML = lockHTML(s);
+    else if(s.kind==="proof") d.innerHTML = proofHTML(s);
+    else if(s.kind==="operacio") d.innerHTML = operacioHTML();
+    else d.innerHTML = s.html;
+    stage.appendChild(d);
+    if(s.widget) mountWidget(s, d);
+    wire(s, d);
+  });
+  // menú
+  const list = document.querySelector("#menu .list");
+  list.innerHTML = SCREENS.map((s,i)=>`<button data-go="${i}"><i>${String(i+1).padStart(2,"0")}</i>${s.menu}</button>`).join("");
+  list.querySelectorAll("button").forEach(b=>b.onclick=()=>{go(+b.dataset.go);toggleMenu(false);});
+  drawRail();
+  show(0);
+}
+
+/* ---------- widgets ---------- */
+function mountWidget(s, root){
+  const host = root.querySelector("#w-"+s.id);
+  if(!host) return;
+  if(s.widget==="score"){
+    const cursa = s.id === "prova3";
+    const objectiu = cursa ? 10 : 30;
+    host.innerHTML = `
+      <div class="widget" style="flex-direction:column;align-items:flex-start;width:100%">
+        <div class="score" data-sc>0<small> / ${objectiu} ${cursa ? "posicions" : "punts"}</small></div>
+        <div class="bar" style="width:100%"><i data-bar></i></div>
+        <div class="btnrow" style="justify-content:flex-start;margin-top:1.8vmin">
+          <button class="btn" data-add="1">+1</button>
+          <button class="btn" data-add="2">+2</button>
+          <button class="btn" data-add="3">+3</button>
+          <button class="btn amber" data-add="-1">↺ retrocedir 1</button>
+          <button class="btn amber" data-add="reset">Reiniciar</button>
+        </div>
+      </div>`;
+    let pts = 0;
+    const sc = host.querySelector("[data-sc]"), bar = host.querySelector("[data-bar]");
+    host.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{
+      const v = b.dataset.add;
+      if(v==="reset") pts = 0; else pts = Math.max(0, pts + parseInt(v,10));
+      sc.innerHTML = pts + "<small> / " + objectiu + " " + (cursa ? "posicions" : "punts") + "</small>";
+      bar.style.width = Math.min(100, pts/objectiu*100) + "%";
+      if(pts>=objectiu){ sc.style.color="var(--amber)"; sOk(); } else { sc.style.color="var(--green)"; sKey(); }
+    });
+  } else {
+    const down = s.widget==="countdown";
+    host.innerHTML = `
+      <div class="widget">
+        <div class="clock" data-clock>${fmt(down?s.segons:0)}</div>
+        <div class="btnrow" style="margin:0">
+          <button class="btn" data-t="go">Començar</button>
+          <button class="btn" data-t="stop">Pausa</button>
+          <button class="btn amber" data-t="rst">Reiniciar</button>
+        </div>
+      </div>`;
+    const el = host.querySelector("[data-clock]");
+    let t = down ? s.segons : 0, id = null;
+    const paint = ()=>{
+      el.textContent = fmt(Math.abs(t));
+      el.className = "clock" + (down && t<=30 && t>0 ? " warn" : "") + (down && t<=0 ? " over" : "");
+    };
+    const tick = ()=>{
+      t += down ? -1 : 1;
+      if(down && t<=0){ t=0; clearInterval(id); id=null; sErr(); }
+      else if(down && t<=5) sTick();
+      paint();
+    };
+    host.querySelector('[data-t="go"]').onclick = ()=>{ if(!id){ id=setInterval(tick,1000); sKey(); } };
+    host.querySelector('[data-t="stop"]').onclick = ()=>{ clearInterval(id); id=null; };
+    host.querySelector('[data-t="rst"]').onclick = ()=>{ clearInterval(id); id=null; t = down?s.segons:0; paint(); };
+  }
+}
+const fmt = s => Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+
+/* ---------- interaccions per pantalla ---------- */
+function wire(s, root){
+  if(s.kind==="proof"){
+    const proofDisplay = root.querySelector("[data-proof-display]");
+    const proofCodeStatus = root.querySelector("[data-proof-code-status]");
+    let proofBuffer = "";
+    const paintProofKeypad = ()=>{ proofDisplay.textContent = proofBuffer || "·"; };
+    const openEnigma = ()=>{
+      if(proofBuffer !== s.code()){
+        proofCodeStatus.className = "answer-status err";
+        proofCodeStatus.textContent = "✖ Número incorrecte";
+        proofBuffer = "";
+        paintProofKeypad();
+        sErr();
+        return;
+      }
+      proofCodeStatus.className = "answer-status ok";
+      proofCodeStatus.textContent = "✔ Número acceptat";
+      root.querySelectorAll("[data-proof-key]").forEach(button=>button.disabled=true);
+      root.querySelector("[data-proof-code]").classList.add("hidden");
+      root.querySelector("[data-proof-reveal]").classList.remove("hidden");
+      state.digits[s.idx] = Number(s.code());
+      drawRail();
+      sOk();
+    };
+    root.querySelectorAll("[data-proof-key]").forEach(button=>button.onclick=()=>{
+      const key = button.dataset.proofKey;
+      if(key === "C"){ proofBuffer = ""; paintProofKeypad(); sKey(); return; }
+      if(key === "OK"){ openEnigma(); return; }
+      if(proofBuffer.length < 1){ proofBuffer = key; paintProofKeypad(); sKey(); }
+    });
+  }
+  if(root.querySelector("[data-choice]")){
+    const answerStatus = root.querySelector("[data-answer-status]");
+    root.querySelectorAll("[data-choice]").forEach(button=>button.onclick=()=>{
+      const selected = Number(button.dataset.choice);
+      root.querySelectorAll("[data-choice]").forEach(choice=>choice.classList.remove("selected"));
+      button.classList.add("selected");
+      root.querySelectorAll("[data-choice]").forEach(choice=>choice.disabled=true);
+      root.querySelector("[data-pista]").classList.add("hidden");
+      root.querySelector("[data-passar]").classList.add("hidden");
+      if(selected === CONFIG.enigmes[s.idx].solucio){
+        answerStatus.className = "answer-status ok";
+        answerStatus.textContent = "✔ Resposta correcta · +5 minuts";
+        root.querySelector("[data-sol]").classList.remove("hidden");
+        GT.add(CONFIG.minutsEnigma);
+        sOk();
+      } else {
+        answerStatus.className = "answer-status err";
+        answerStatus.textContent = "✖ Resposta incorrecta · sense temps extra";
+        sErr();
+      }
+    });
+    root.querySelector("[data-pista]").onclick = ()=>{
+      root.querySelector("[data-pistatxt]").classList.remove("hidden"); sKey();
+    };
+    root.querySelector("[data-passar]").onclick = e=>{
+      e.target.classList.add("hidden");
+      root.querySelectorAll("[data-choice]").forEach(choice=>choice.disabled=true);
+      root.querySelector("[data-pista]").classList.add("hidden");
+      answerStatus.className = "answer-status";
+      answerStatus.textContent = "Enigma passat";
+      sKey();
+    };
+  }
+  if(root.querySelector("[data-startclock]")){
+    root.querySelector("[data-startclock]").onclick = e=>{
+      GT.start();
+      e.target.textContent = "⏱ JOC EN MARXA";
+      const polseres = SCREENS.findIndex(screen=>screen.id === "polseres");
+      if(polseres >= 0) go(polseres);
+    };
+  }
+  if(s.kind==="operacio"){
+    const display = root.querySelector("[data-op-display]");
+    const status = root.querySelector("[data-op-status]");
+    let buffer = "";
+    const paint = ()=>[...display.children].forEach((cell,i)=>{
+      cell.textContent = buffer[i] || "·";
+      cell.classList.toggle("filled", !!buffer[i]);
+    });
+    const submit = ()=>{
+      if(buffer !== CODI3){
+        status.className = "status err";
+        status.textContent = "✖ Resultat incorrecte";
+        buffer = "";
+        paint();
+        sErr();
+        return;
+      }
+      status.className = "status ok";
+      status.textContent = "✔ Resultat correcte";
+      root.querySelectorAll("[data-op-key]").forEach(button=>button.disabled=true);
+      sOk();
+      const next = SCREENS.findIndex(screen=>screen.id === "superfinal");
+      if(next >= 0) setTimeout(()=>go(next),700);
+    };
+    root.querySelectorAll("[data-op-key]").forEach(button=>button.onclick=()=>{
+      const key = button.dataset.opKey;
+      if(key === "C"){ buffer = ""; paint(); sKey(); return; }
+      if(key === "OK"){ submit(); return; }
+      if(buffer.length < CODI3.length){ buffer += key; paint(); sKey(); }
+    });
+  }
+  if(s.kind==="lock"){
+    const box = root.querySelector("[data-lockbody]"),
+          disp = root.querySelector("[data-display]"),
+          st = root.querySelector("[data-status]"),
+          hintRow = root.querySelector("[data-hintrow]");
+    let buf = "", fails = 0, open = false;
+    const paint = ()=>{
+      [...disp.children].forEach((d,i)=>{
+        d.textContent = buf[i] || "·";
+        d.classList.toggle("filled", !!buf[i]);
+      });
+    };
+    const press = k=>{
+      if(open) return;
+      if(k==="C"){ buf=""; st.className="status"; st.textContent=s.prompt||("Introduïu el codi de desactivació ("+s.digits+" xifres)"); paint(); sKey(); return; }
+      if(k==="OK"){ check(); return; }
+      if(buf.length < s.digits){ buf += k; paint(); sKey(); if(buf.length===s.digits) setTimeout(check,320); }
+    };
+    const check = ()=>{
+      if(buf.length < s.digits){ st.className="status err"; st.textContent="Falten dígits"; sErr(); return; }
+      if(buf === s.code()){
+        open = true; sOk();
+        document.getElementById("flash").classList.remove("go");
+        void document.getElementById("flash").offsetWidth;
+        document.getElementById("flash").classList.add("go");
+        st.className="status ok"; st.textContent="✔ Codi correcte";
+        setTimeout(()=>{
+          box.classList.add("hidden");
+          root.querySelector("[data-unlocked]").classList.remove("hidden");
+        }, 700);
+      } else {
+        fails++;
+        st.className="status err"; st.textContent="✖ Codi incorrecte · intent "+fails;
+        box.classList.add("shake"); sErr();
+        setTimeout(()=>box.classList.remove("shake"),480);
+        setTimeout(()=>{ buf=""; paint(); }, 700);
+        if(fails>=3) hintRow.classList.remove("hidden");
+      }
+    };
+    root.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>press(b.dataset.k));
+    root.querySelector("[data-hint]").onclick = ()=>{
+      const c = s.code();
+      st.className="status";
+      st.textContent = c.length<=1
+        ? "El sistema no dona pistes. Mireu bé la targeta."
+        : "El codi comença per " + c[0] + " i acaba en " + c[c.length-1];
+      sKey();
+    };
+    root._press = press;
+  }
+}
+
+/* ---------- rail de dígits ---------- */
+function drawRail(){
+  document.getElementById("rail").innerHTML = state.digits.map((d,i)=>
+    `<div class="slot ${d!==null?"on":""}">${d!==null?d:'<span class="q">?</span>'}</div>`).join("");
+}
+
+/* ---------- navegació ---------- */
+function show(i){
+  document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
+  document.getElementById("s"+i).classList.add("active");
+  state.i = i;
+  document.getElementById("counter").textContent =
+    String(i+1).padStart(2,"0") + " / " + String(SCREENS.length).padStart(2,"0");
+  document.getElementById("prog").style.width = ((i+1)/SCREENS.length*100)+"%";
+  const n = SCREENS[i].nota;
+  const nb = document.getElementById("notes");
+  nb.textContent = n ? "▸ " + n : "";
+  nb.style.visibility = n ? "visible" : "hidden";
+  // el rellotge arrenca sol en sortir de la cerca de polseres
+  if(SCREENS[i].id === "grups") GT.start();
+  // i s'atura en arribar al final
+  if(SCREENS[i].id === "final"){
+    GT.pause();
+    const r = document.querySelector("#s"+i+" [data-resta]");
+    if(r) r.textContent = GT.started ? (GT.left>0 ? GT.restant() : "0 — just a temps!") : "sense rellotge";
+  }
+}
+function go(i){ show(Math.max(0, Math.min(SCREENS.length-1, i))); }
+function toggleMenu(v){ document.getElementById("menu").classList.toggle("on", v); }
+
+/* ---------- navegació tàctil: botons i lliscar ---------- */
+const touchnav = document.getElementById("touchnav");
+touchnav.querySelector('[data-nav="prev"]').onclick = ()=>{ go(state.i-1); sKey(); };
+touchnav.querySelector('[data-nav="next"]').onclick = ()=>{ go(state.i+1); sKey(); };
+touchnav.querySelector('[data-nav="menu"]').onclick = ()=>
+  toggleMenu(!document.getElementById("menu").classList.contains("on"));
+
+let swX = 0, swY = 0, swOn = false;
+stage.addEventListener("touchstart", e=>{
+  // no llisquis si el dit ha començat sobre un botó o un camp
+  swOn = e.touches.length === 1 && !e.target.closest("button,input");
+  if(swOn){ swX = e.touches[0].clientX; swY = e.touches[0].clientY; }
+}, {passive:true});
+stage.addEventListener("touchend", e=>{
+  if(!swOn) return;
+  swOn = false;
+  const t = e.changedTouches[0], dx = t.clientX - swX, dy = t.clientY - swY;
+  if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.6) go(state.i + (dx < 0 ? 1 : -1));
+}, {passive:true});
+
+document.addEventListener("keydown", e=>{
+  const cur = document.getElementById("s"+state.i);
+  if(/^[0-9]$/.test(e.key) && cur && cur._press){ cur._press(e.key); return; }
+  if(cur && cur._press && (e.key==="Enter")){ cur._press("OK"); return; }
+  if(cur && cur._press && (e.key==="Backspace")){ e.preventDefault(); cur._press("C"); return; }
+  switch(e.key){
+    case "ArrowRight": case " ": case "PageDown": e.preventDefault(); go(state.i+1); break;
+    case "ArrowLeft": case "PageUp": e.preventDefault(); go(state.i-1); break;
+    case "Home": go(0); break;
+    case "End": go(SCREENS.length-1); break;
+    case "m": case "M": toggleMenu(!document.getElementById("menu").classList.contains("on")); break;
+    case "Escape": toggleMenu(false); break;
+    case "n": case "N": document.getElementById("notes").classList.toggle("on"); break;
+    case "s": case "S": soOn = !soOn; if(soOn) sKey(); break;
+    case "p": case "P": GT.toggle(); break;
+    case "+": GT.add(5); break;
+    case "-": GT.add(-5); break;
+    case "f": case "F":
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+      break;
+  }
+});
+
+GT.init();
+build();
+</script>
+</body>
+</html>
