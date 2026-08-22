@@ -184,7 +184,7 @@ button{font-family:var(--mono);cursor:pointer}
 .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:.4s}
 
 /* ---------- botó gegant d'inici ---------- */
-.playbtn{width:22vmin;height:22vmin;border-radius:50%;font-size:9vmin;line-height:1;
+.playbtn{width:29vmin;height:29vmin;border-radius:50%;font-size:12vmin;line-height:1;
   padding-left:1.4vmin;                       /* centra òpticament el triangle */
   color:var(--green);border:.7vmin solid var(--green);
   background:radial-gradient(circle at 50% 45%,rgba(61,255,158,.22),rgba(61,255,158,.05) 70%);
@@ -303,7 +303,7 @@ button{font-family:var(--mono);cursor:pointer}
   .screen .card{padding:3.6vmin 4vmin}
   .screen .btn{font-size:3.4vmin;padding:2vmin 3.4vmin}
   .screen .boot{font-size:3.6vmin;max-width:none;margin-top:4vmin}
-  .playbtn{width:34vmin;height:34vmin;font-size:14vmin;border-width:1vmin}
+  .playbtn{width:44vmin;height:44vmin;font-size:18vmin;border-width:1vmin}
 
   .screen .grid4{grid-template-columns:repeat(2,1fr)!important;gap:3vmin}
   .screen .choices{grid-template-columns:1fr}
@@ -582,15 +582,14 @@ function provaHTML(p){
 
 const SCREENS = [
 
-{ id:"portada", menu:"Portada", nota:"Tothom assegut i llums apagats abans de prémer el PLAY. En prémer-lo sona l'arrencada i apareix la llista de tasques; després avança amb →. El PLAY també desbloqueja el so del navegador: prem-lo sempre, encara que ja hagis vist la portada.", html:`
+{ id:"portada", menu:"Portada", nota:"Pantalla buida amb el PLAY: espera que tothom estigui assegut i amb els llums apagats. En prémer-lo sona l'arrencada i apareixen el títol i la llista de tasques; després avança amb →. El PLAY també desbloqueja el so del navegador: prem-lo sempre, encara que ja hagis vist la portada.", html:`
   <div class="center">
-    <span class="tag alt">Protocol NENSRENTAPLATS · Torn de nit</span>
-    <h1>Escape<br>Plats</h1>
-    <div data-playwrap style="margin-top:3.4vmin">
+    <div data-playwrap>
       <button class="playbtn" data-play type="button" aria-label="Iniciar el sistema">▶</button>
-      <p class="lead dim" style="margin-top:1.8vmin;letter-spacing:.34em">INICIAR SISTEMA</p>
     </div>
     <div class="hidden" data-boot>
+      <span class="tag alt">Protocol NENSRENTAPLATS · Torn de nit</span>
+      <h1>Escape<br>Plats</h1>
       <p class="lead dim" style="margin-top:3vmin">Estat del sistema: <span style="color:var(--red)">TORN DE PLATS ASSIGNAT — 12 NENS</span></p>
       <div class="boot">
         &gt; carregant llista de tasques nocturnes...<br>
