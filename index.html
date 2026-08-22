@@ -183,6 +183,21 @@ button{font-family:var(--mono);cursor:pointer}
 .bar{height:2.6vmin;border:2px solid var(--green-dim);border-radius:2vmin;overflow:hidden;margin-top:1.6vmin}
 .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:.4s}
 
+/* ---------- botó gegant d'inici ---------- */
+.playbtn{width:22vmin;height:22vmin;border-radius:50%;font-size:9vmin;line-height:1;
+  padding-left:1.4vmin;                       /* centra òpticament el triangle */
+  color:var(--green);border:.7vmin solid var(--green);
+  background:radial-gradient(circle at 50% 45%,rgba(61,255,158,.22),rgba(61,255,158,.05) 70%);
+  box-shadow:0 0 6vmin rgba(61,255,158,.45),inset 0 0 3vmin rgba(61,255,158,.25);
+  animation:pulse 2.2s ease-in-out infinite;transition:transform .15s,background .18s}
+.playbtn:hover{background:radial-gradient(circle at 50% 45%,rgba(61,255,158,.38),rgba(61,255,158,.08) 70%)}
+.playbtn:active{transform:scale(.94)}
+.playbtn:focus-visible{outline:.4vmin solid var(--amber);outline-offset:1.2vmin}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 6vmin rgba(61,255,158,.45),inset 0 0 3vmin rgba(61,255,158,.25)}
+  50%{box-shadow:0 0 11vmin rgba(61,255,158,.72),inset 0 0 4vmin rgba(61,255,158,.4)}}
+@media (prefers-reduced-motion:reduce){.playbtn{animation:none}}
+
 /* ---------- portada / final ---------- */
 .center{text-align:center}
 .center p{margin-left:auto;margin-right:auto}
@@ -288,6 +303,7 @@ button{font-family:var(--mono);cursor:pointer}
   .screen .card{padding:3.6vmin 4vmin}
   .screen .btn{font-size:3.4vmin;padding:2vmin 3.4vmin}
   .screen .boot{font-size:3.6vmin;max-width:none;margin-top:4vmin}
+  .playbtn{width:34vmin;height:34vmin;font-size:14vmin;border-width:1vmin}
 
   .screen .grid4{grid-template-columns:repeat(2,1fr)!important;gap:3vmin}
   .screen .choices{grid-template-columns:1fr}
@@ -397,7 +413,8 @@ const CONFIG = {
         ["Dani","Marc"],
         []
       ],
-      minutsEnigma: 5,
+      minutsEnigma: 5,          // el que guanyen si l'encerten
+      minutsEnigmaFallat: 2,    // el que perden si l'erren (passar no costa res)
 
   // ---- Minuts totals del compte enrere (s'activa en trobar les polseres)
   minutsTotals: 60,
@@ -450,6 +467,7 @@ function beep(freq, dur, type, vol){
   if(!soOn) return;
   try{
     actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state === "suspended") actx.resume();
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = type||"square"; o.frequency.value = freq;
     g.gain.value = vol||.06;
@@ -459,6 +477,27 @@ function beep(freq, dur, type, vol){
     o.stop(actx.currentTime + (dur||.08));
   }catch(e){}
 }
+function sweep(f0, f1, dur, type, vol){
+  if(!soOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state === "suspended") actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain(), t0 = actx.currentTime;
+    o.type = type || "sawtooth";
+    o.frequency.setValueAtTime(f0, t0);
+    o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    g.gain.setValueAtTime(vol || .05, t0);
+    g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t0); o.stop(t0 + dur + .02);
+  }catch(e){}
+}
+/* arrencada electrònica: pujada, ressò descendent i acord final */
+const sBoot = ()=>{
+  sweep(60, 900, .9, "sawtooth", .05);
+  setTimeout(()=>sweep(1400, 260, .4, "sine", .045), 320);
+  [392,523,659,988].forEach((f,i)=>setTimeout(()=>beep(f,.55,"triangle",.06), 720 + i*95));
+};
 const sKey  = ()=>beep(680,.05,"square",.05);
 const sErr  = ()=>{beep(150,.18,"sawtooth",.08); setTimeout(()=>beep(110,.28,"sawtooth",.08),150);};
 const sOk   = ()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,"triangle",.07),i*110));};
@@ -543,16 +582,22 @@ function provaHTML(p){
 
 const SCREENS = [
 
-{ id:"portada", menu:"Portada", nota:"Tothom assegut, llums apagats. Deixa la pantalla amb el cursor parpellejant mentre arriben.", html:`
+{ id:"portada", menu:"Portada", nota:"Tothom assegut i llums apagats abans de prémer el PLAY. En prémer-lo sona l'arrencada i apareix la llista de tasques; després avança amb →. El PLAY també desbloqueja el so del navegador: prem-lo sempre, encara que ja hagis vist la portada.", html:`
   <div class="center">
     <span class="tag alt">Protocol NENSRENTAPLATS · Torn de nit</span>
     <h1>Escape<br>Plats</h1>
-    <p class="lead dim" style="margin-top:3vmin">Estat del sistema: <span style="color:var(--red)">TORN DE PLATS ASSIGNAT — 12 NENS</span></p>
-    <div class="boot">
-      &gt; carregant llista de tasques nocturnes...<br>
-      &gt; rentar <b>47 plats</b>, <b>36 gots</b>, <b>3 olles cremades</b><br>
-      &gt; responsables assignats: <b>tots els nens de la casa</b><br>
-      &gt; missió pendent: <b>trobar les polseres</b><span class="blink-cursor"></span>
+    <div data-playwrap style="margin-top:3.4vmin">
+      <button class="playbtn" data-play type="button" aria-label="Iniciar el sistema">▶</button>
+      <p class="lead dim" style="margin-top:1.8vmin;letter-spacing:.34em">INICIAR SISTEMA</p>
+    </div>
+    <div class="hidden" data-boot>
+      <p class="lead dim" style="margin-top:3vmin">Estat del sistema: <span style="color:var(--red)">TORN DE PLATS ASSIGNAT — 12 NENS</span></p>
+      <div class="boot">
+        &gt; carregant llista de tasques nocturnes...<br>
+        &gt; rentar <b>47 plats</b>, <b>36 gots</b>, <b>3 olles cremades</b><br>
+        &gt; responsables assignats: <b>tots els nens de la casa</b><br>
+        &gt; missió pendent: <b>trobar les polseres</b><span class="blink-cursor"></span>
+      </div>
     </div>
   </div>`},
 
@@ -742,6 +787,8 @@ function enigmaBlock(idx){
   <span class="tag" style="margin-top:2.4vmin">Enigma ${idx+1} — tria la resposta</span>
   <div class="enigma">
     <div class="verse">${esc(e.verse)}</div>
+    <p class="dim" style="font-size:2vmin;margin-top:1.4vmin;letter-spacing:.12em">
+      Encert +${CONFIG.minutsEnigma} min · errada −${CONFIG.minutsEnigmaFallat} min · passar no costa res</p>
     <div class="choices">
       ${e.opcions.map((opcio,i)=>`<button class="choice" data-choice="${i}">${i+1}. ${opcio}</button>`).join("")}
     </div>
@@ -1048,7 +1095,8 @@ function wire(s, root){
         sOk();
       } else {
         answerStatus.className = "answer-status err";
-        answerStatus.textContent = "✖ Resposta incorrecta · sense temps extra";
+        answerStatus.textContent = "✖ Resposta incorrecta · −" + CONFIG.minutsEnigmaFallat + " minuts";
+        GT.add(-CONFIG.minutsEnigmaFallat);
         sErr();
       }
     });
@@ -1062,6 +1110,15 @@ function wire(s, root){
       answerStatus.className = "answer-status";
       answerStatus.textContent = "Enigma passat";
       sKey();
+    };
+  }
+  if(root.querySelector("[data-play]")){
+    root.querySelector("[data-play]").onclick = ()=>{
+      sBoot();
+      const flash = document.getElementById("flash");
+      flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
+      root.querySelector("[data-playwrap]").classList.add("hidden");
+      root.querySelector("[data-boot]").classList.remove("hidden");
     };
   }
   if(root.querySelector("[data-startclock]")){
