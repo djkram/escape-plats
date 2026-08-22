@@ -470,6 +470,7 @@ const CONFIG = {
       { lletra:"B", rol:"Assassí 2", gest:"pica l'ullet",    valor:9 },
       { lletra:"C", rol:"El lladre", gest:"treu la llengua", valor:5 }
     ],
+    minutsCulpable: 3,          // minuts que guanyen per cada culpable desemmascarat
     penalitzacioMin: 2          // minuts que costa una acusació fallada
   },
   operacioText: "A × B + B × C + C × A",
@@ -955,7 +956,7 @@ const SCREENS = [
   nota:"Els tres culpables es combinen EN SECRET qui actua a cada ronda. Mai no actuïn sobre el grup que està investigant. Els controladors poden fer teatre de sospitosos per despistar." },
 
 { id:"rondes", menu:"Tauler d'investigació", kind:"rondes",
-  nota:"Fes servir «Torn següent» per rotar el grup que investiga i «Acusació fallada» quan s'equivoquin. Revela la fitxa d'un culpable només quan l'hagin encertat amb el rol correcte." },
+  nota:`Fes servir «Torn següent» per rotar el grup que investiga i «Acusació fallada» quan s'equivoquin (−${CONFIG.assassins.penalitzacioMin} min). Prem «Desemmascarat» només quan hagin encertat adult I rol: dona la fitxa i suma ${CONFIG.assassins.minutsCulpable} minuts al rellotge.` },
 
 { id:"operacio", menu:"⌨ TERMINAL MESTRE · 3 xifres", kind:"operacio",
   nota:"Que cada xifra la tecleji un nen diferent. El botó de solució és per als adults: no el premis abans d'hora." },
@@ -1078,7 +1079,8 @@ function assassinsHTML(){
 
 /* --- Prova final: tauler d'investigació --- */
 function rondesHTML(){
-  const c = CONFIG.assassins.culpables, pen = CONFIG.assassins.penalitzacioMin;
+  const c = CONFIG.assassins.culpables, pen = CONFIG.assassins.penalitzacioMin,
+        rec = CONFIG.assassins.minutsCulpable;
   return `
   <span class="tag alt" style="margin-bottom:1.2vmin">Prova final · en marxa</span>
   <h2 style="font-size:4.4vmin;margin-bottom:1.2vmin">Tauler d'investigació</h2>
@@ -1098,10 +1100,10 @@ function rondesHTML(){
       <h3>Cada ronda</h3>
       <ul>
         <li>Una sola <b>acció secreta</b>: una mort o un robatori.</li>
-        <li>L'acusació diu <b>quin adult</b> i <b>quin rol</b> fa.</li>
+        <li><b>Una acusació</b> per ronda: quin adult i quin rol.</li>
         <li>Hi calen <b>2 vots</b> del grup com a mínim.</li>
-        <li><b>Una acusació</b> per ronda, i prou.</li>
-        <li>Errada: <b>−${pen} min</b> i el torn passa al grup següent.</li>
+        <li>Encert: <b style="color:var(--green)">+${rec} min</b> i la fitxa del culpable.</li>
+        <li>Errada: <b style="color:var(--red)">−${pen} min</b> i passa el torn.</li>
       </ul>
     </div>
   </div>
@@ -1370,8 +1372,11 @@ function wire(s, root){
       card.querySelector("[data-valor]").classList.remove("hidden");
       card.style.borderColor = "var(--green)";
       button.disabled = true;
-      button.textContent = "Desemmascarat ✔";
+      const guanyats = CONFIG.assassins.minutsCulpable;
+      GT.add(guanyats);
+      button.textContent = "Desemmascarat ✔ +" + guanyats + " min";
       sOk();
+      sweep(400,1300,.45,"triangle",.045);
     });
   }
   if(s.kind==="operacio"){
