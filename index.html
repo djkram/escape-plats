@@ -366,7 +366,7 @@ button{font-family:var(--mono);cursor:pointer}
 </div>
 <div id="stage"></div>
 <div id="notes"></div>
-<div id="help">← → navegar · P pausa rellotge · +/− 5 min · M menú · N notes · F pantalla · S so</div>
+<div id="help">← → navegar · P pausa · +/− 5 min · M menú · N notes · F pantalla · S so · B música · T tic</div>
 <div id="menu"><h3>Índex de pantalles</h3><div class="list"></div></div>
 <div id="prog"></div>
 <div id="touchnav">
@@ -503,6 +503,96 @@ const sErr  = ()=>{beep(150,.18,"sawtooth",.08); setTimeout(()=>beep(110,.28,"sa
 const sOk   = ()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,"triangle",.07),i*110));};
 const sTick = ()=>beep(880,.06,"sine",.05);
 
+/* Transició de pantalla: puja si avances, baixa si retrocedeixes */
+const sNav = dir => sweep(dir > 0 ? 430 : 820, dir > 0 ? 820 : 430, .11, "triangle", .04);
+
+/* Tic de rellotge digital, un per segon mentre el compte enrere corre */
+let ticOn = true;
+const sTic = ()=>{
+  if(!ticOn) return;
+  const urgent = GT.left <= 60;
+  beep(urgent ? 1568 : 1245, urgent ? .05 : .028, "square", urgent ? .05 : .028);
+};
+
+/* ==================================================================
+   MÚSICA DE FONS — misteri cibernètic
+   Brunzit greu de dues serres desafinades sota un filtre passabaix que
+   es mou sol, i notes soltes per sobre. A `mood(true)` (prova final)
+   el filtre s'obre i les notes se sovintegen.
+   ================================================================== */
+const AMB = {
+  on:false, tens:false, master:null, filt:null, oscs:[], lfo:null, blipId:null,
+  start(){
+    if(this.on || !soOn) return;
+    try{
+      actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+      if(actx.state === "suspended") actx.resume();
+      const t = actx.currentTime;
+
+      this.master = actx.createGain();
+      this.master.gain.setValueAtTime(0, t);
+      this.master.gain.linearRampToValueAtTime(.035, t + 5);
+      this.master.connect(actx.destination);
+
+      this.filt = actx.createBiquadFilter();
+      this.filt.type = "lowpass";
+      this.filt.frequency.value = 320;
+      this.filt.Q.value = 7;
+      this.filt.connect(this.master);
+
+      [[55,"sawtooth",.28],[55.35,"sawtooth",.28],[110,"sine",.5],[82.5,"triangle",.16]]
+        .forEach(([f,type,v])=>{
+          const o = actx.createOscillator(), g = actx.createGain();
+          o.type = type; o.frequency.value = f; g.gain.value = v;
+          o.connect(g); g.connect(this.filt); o.start();
+          this.oscs.push(o);
+        });
+
+      this.lfo = actx.createOscillator();
+      const lg = actx.createGain();
+      this.lfo.frequency.value = .045;      // una respiració cada ~22 s
+      lg.gain.value = 210;
+      this.lfo.connect(lg); lg.connect(this.filt.frequency); this.lfo.start();
+
+      this.on = true;
+      this.blip();
+    }catch(e){}
+  },
+  blip(){
+    if(!this.on) return;
+    const escala = [349.23,392,466.16,523.25,622.25,698.46];   // menor, inquieta
+    try{
+      const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+      o.type = "triangle";
+      o.frequency.value = escala[Math.floor(Math.random()*escala.length)] * (Math.random() < .3 ? 2 : 1);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(this.tens ? .05 : .03, t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, t + 1.6);
+      o.connect(g); g.connect(this.master);
+      o.start(t); o.stop(t + 1.7);
+    }catch(e){}
+    this.blipId = setTimeout(()=>this.blip(),
+      this.tens ? 1800 + Math.random()*2600 : 4000 + Math.random()*5000);
+  },
+  mood(tens){
+    if(this.tens === tens) return;
+    this.tens = tens;
+    if(this.on && this.filt){
+      try{ this.filt.frequency.setTargetAtTime(tens ? 540 : 320, actx.currentTime, 3); }catch(e){}
+    }
+  },
+  stop(fade){
+    if(!this.on) return;
+    this.on = false;
+    clearTimeout(this.blipId); this.blipId = null;
+    const d = fade === false ? .08 : 2.5, oscs = this.oscs, lfo = this.lfo;
+    try{ this.master.gain.setTargetAtTime(0, actx.currentTime, d/3); }catch(e){}
+    setTimeout(()=>{ try{ oscs.forEach(o=>o.stop()); lfo && lfo.stop(); }catch(e){} }, d*1000 + 300);
+    this.oscs = []; this.lfo = null;
+  },
+  toggle(){ this.on ? this.stop() : this.start(); }
+};
+
 /* ==================================================================
    COMPTE ENRERE GLOBAL
    ================================================================== */
@@ -528,6 +618,7 @@ const GT = {
   add(m){ this.left = Math.max(0, this.left + m*60); this.paint(); },
   tick(){
     this.left--; this.up++;
+    sTic();
     if(this.left <= 0){ this.left = 0; this.pause(); alarma(); }
     else if(this.left === 600 || this.left === 300 || this.left === 60) beep(880,.5,"sine",.07);
     this.paint();
@@ -985,6 +1076,7 @@ function build(){
   list.querySelectorAll("button").forEach(b=>b.onclick=()=>{go(+b.dataset.go);toggleMenu(false);});
   drawRail();
   show(0);
+  navSound = true;      // res de so a la primera pintada
 }
 
 /* ---------- widgets ---------- */
@@ -1118,14 +1210,15 @@ function wire(s, root){
       flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
       root.querySelector("[data-playwrap]").classList.add("hidden");
       root.querySelector("[data-boot]").classList.remove("hidden");
+      setTimeout(()=>AMB.start(), 1100);   // la música entra amb la informació inicial
     };
   }
   if(root.querySelector("[data-startclock]")){
     root.querySelector("[data-startclock]").onclick = e=>{
-      GT.start();
+      GT.start();                       // arrenca el rellotge i fa sonar l'acord
       e.target.textContent = "⏱ JOC EN MARXA";
-      const polseres = SCREENS.findIndex(screen=>screen.id === "polseres");
-      if(polseres >= 0) go(polseres);
+      e.target.disabled = true;
+      setTimeout(()=>go(state.i + 1), 550);   // deixa sonar i passa a la següent
     };
   }
   if(s.kind==="rondes"){
@@ -1255,7 +1348,9 @@ function drawRail(){
 }
 
 /* ---------- navegació ---------- */
+let navSound = false;
 function show(i){
+  if(navSound && i !== state.i) sNav(i > state.i ? 1 : -1);
   document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
   document.getElementById("s"+i).classList.add("active");
   state.i = i;
@@ -1266,11 +1361,14 @@ function show(i){
   const nb = document.getElementById("notes");
   nb.textContent = n ? "▸ " + n : "";
   nb.style.visibility = n ? "visible" : "hidden";
+  // la música s'espesseix a la prova final
+  AMB.mood(["assassins","rondes","operacio"].includes(SCREENS[i].id));
   // el rellotge arrenca sol en sortir de la cerca de polseres
   if(SCREENS[i].id === "grups") GT.start();
-  // i s'atura en arribar al final
+  // i s'atura en arribar al final, amb la música
   if(SCREENS[i].id === "final"){
     GT.pause();
+    AMB.stop();
     const r = document.querySelector("#s"+i+" [data-resta]");
     if(r) r.textContent = GT.started ? (GT.left>0 ? GT.restant() : "0 — just a temps!") : "sense rellotge";
   }
@@ -1311,7 +1409,9 @@ document.addEventListener("keydown", e=>{
     case "m": case "M": toggleMenu(!document.getElementById("menu").classList.contains("on")); break;
     case "Escape": toggleMenu(false); break;
     case "n": case "N": document.getElementById("notes").classList.toggle("on"); break;
-    case "s": case "S": soOn = !soOn; if(soOn) sKey(); break;
+    case "s": case "S": soOn = !soOn; if(soOn) sKey(); else AMB.stop(false); break;
+    case "b": case "B": AMB.toggle(); break;
+    case "t": case "T": ticOn = !ticOn; if(ticOn) sTic(); break;
     case "p": case "P": GT.toggle(); break;
     case "+": GT.add(5); break;
     case "-": GT.add(-5); break;
