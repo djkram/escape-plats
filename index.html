@@ -166,7 +166,22 @@ button{font-family:var(--mono);cursor:pointer}
 .screen > .unlocked .tag,.screen > .unlocked h2,.screen > .unlocked p{margin-left:auto;margin-right:auto}
 .unlocked .msg{font-size:5vmin;color:var(--green);text-transform:uppercase;
   text-shadow:0 0 40px rgba(61,255,158,.6);animation:pop .6s cubic-bezier(.2,1.6,.4,1) both}
+#fx{position:fixed;inset:0;z-index:930;pointer-events:none}
 #flash{position:fixed;inset:0;z-index:950;background:var(--green);opacity:0;pointer-events:none}
+
+/* ---------- pantalla de derrota ---------- */
+#lost{position:fixed;inset:0;z-index:960;display:none;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:8vmin;
+  background:radial-gradient(circle at 50% 42%,rgba(72,0,10,.97),rgba(4,7,10,.99) 68%)}
+#lost.on{display:flex;animation:fade .5s ease both}
+#lost h1{color:var(--red);text-shadow:0 0 7vmin rgba(255,77,94,.65);
+  animation:pop .7s cubic-bezier(.2,1.6,.4,1) both}
+#lost .tag{background:none;color:var(--red);border:1px solid var(--red)}
+#lost p{margin-top:2.4vmin}
+#lost .btnrow button{border-color:rgba(255,77,94,.55);color:var(--red)}
+#lost .btnrow button:hover{border-color:var(--red);background:rgba(255,77,94,.12)}
+.winbig{animation:pop .8s cubic-bezier(.2,1.6,.4,1) both}
+@media (prefers-reduced-motion:reduce){#lost h1,.winbig,#lost.on{animation:none}}
 #flash.go{animation:flash .7s ease-out}
 @keyframes flash{0%{opacity:.75}100%{opacity:0}}
 
@@ -375,7 +390,15 @@ button{font-family:var(--mono);cursor:pointer}
   <button type="button" data-nav="next" aria-label="Pantalla següent">›</button>
 </div>
 <div id="scan"></div><div id="vig"></div>
+<canvas id="fx"></canvas>
 <div id="flash"></div>
+<div id="lost">
+  <span class="tag">Temps esgotat</span>
+  <h1>Heu perdut</h1>
+  <p class="big">El Protocol NENSRENTAPLATS s'ha executat.</p>
+  <p class="lead dim">47 plats, 36 gots i 3 olles cremades us esperen a la cuina.</p>
+  <div class="btnrow"><button class="btn" data-lost-close type="button">▸ Continuar igualment</button></div>
+</div>
 
 <script>
 /* ==================================================================
@@ -503,6 +526,19 @@ const sErr  = ()=>{beep(150,.18,"sawtooth",.08); setTimeout(()=>beep(110,.28,"sa
 const sOk   = ()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,"triangle",.07),i*110));};
 const sTick = ()=>beep(880,.06,"sine",.05);
 
+/* Fanfara de victòria */
+const sWin = ()=>{
+  sweep(200,1700,.65,"sawtooth",.03);
+  [523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>setTimeout(()=>beep(f,.45,"triangle",.07), i*110));
+  setTimeout(()=>[523.25,659.25,783.99,1046.5].forEach(f=>beep(f,1.6,"triangle",.045)), 640);
+};
+/* Ensorrada: caiguda llarga i dos greus desafinats */
+const sLose = ()=>{
+  sweep(460,55,1.5,"sawtooth",.07);
+  [0,360,720].forEach(d=>setTimeout(()=>beep(150,.4,"square",.07), d));
+  setTimeout(()=>[110,116.5].forEach(f=>beep(f,2,"sawtooth",.055)), 950);
+};
+
 /* Transició de pantalla: puja si avances, baixa si retrocedeixes */
 const sNav = dir => sweep(dir > 0 ? 430 : 820, dir > 0 ? 820 : 430, .11, "triangle", .04);
 
@@ -594,6 +630,52 @@ const AMB = {
 };
 
 /* ==================================================================
+   CONFETI DE VICTÒRIA — canvas, amb els quatre colors de les polseres
+   ================================================================== */
+const FX = {
+  cv:null, ctx:null, parts:[], raf:null, t0:0,
+  mida(){ if(this.cv){ this.cv.width = innerWidth; this.cv.height = innerHeight; } },
+  boom(){
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    this.cv = this.cv || document.getElementById("fx");
+    this.ctx = this.ctx || this.cv.getContext("2d");
+    this.mida();
+    const W = this.cv.width, H = this.cv.height, esc = W/130;
+    const colors = CONFIG.grups.map(g=>g[2]).concat(["#3dff9e","#ffffff","#ffcc33"]);
+    this.parts = [];
+    for(let i=0;i<230;i++) this.parts.push({
+      x: W*(.1 + Math.random()*.8), y: H*(.55 + Math.random()*.3),
+      vx:(Math.random()-.5)*14, vy:-(8 + Math.random()*14),
+      w:(.6 + Math.random()*1.1)*esc, h:(1.2 + Math.random()*1.9)*esc,
+      rot:Math.random()*6.28, vr:(Math.random()-.5)*.35,
+      c:colors[(Math.random()*colors.length)|0]
+    });
+    cancelAnimationFrame(this.raf);
+    this.t0 = performance.now();
+    this.tick();
+  },
+  tick(){
+    const g = this.ctx, c = this.cv, vida = (performance.now() - this.t0)/1000;
+    g.clearRect(0,0,c.width,c.height);
+    const opac = vida > 5 ? Math.max(0, 1 - (vida-5)/2.5) : 1;
+    for(const p of this.parts){
+      p.vy += .38; p.vx *= .995; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      g.save(); g.globalAlpha = opac;
+      g.translate(p.x, p.y); g.rotate(p.rot);
+      g.fillStyle = p.c; g.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      g.restore();
+    }
+    if(vida < 7.5) this.raf = requestAnimationFrame(()=>this.tick());
+    else { this.raf = null; g.clearRect(0,0,c.width,c.height); }
+  },
+  neteja(){
+    cancelAnimationFrame(this.raf); this.raf = null;
+    if(this.ctx) this.ctx.clearRect(0,0,this.cv.width,this.cv.height);
+  }
+};
+addEventListener("resize", ()=>{ if(FX.raf) FX.mida(); });
+
+/* ==================================================================
    COMPTE ENRERE GLOBAL
    ================================================================== */
 const GT = {
@@ -615,11 +697,15 @@ const GT = {
   resume(){ if(this.id || !this.started) return; this.id = setInterval(()=>this.tick(),1000); this.paint(); },
   pause(){ clearInterval(this.id); this.id = null; this.paint(); },
   toggle(){ if(!this.started){ this.start(); return; } this.id ? this.pause() : this.resume(); },
-  add(m){ this.left = Math.max(0, this.left + m*60); this.paint(); },
+  add(m){
+    this.left = Math.max(0, this.left + m*60);
+    if(this.left > 0) tancarPerdut();
+    this.paint();
+  },
   tick(){
     this.left--; this.up++;
     sTic();
-    if(this.left <= 0){ this.left = 0; this.pause(); alarma(); }
+    if(this.left <= 0){ this.left = 0; this.pause(); perdre(); }
     else if(this.left === 600 || this.left === 300 || this.left === 60) beep(880,.5,"sine",.07);
     this.paint();
   },
@@ -640,7 +726,13 @@ const GT = {
   },
   restant(){ const m=Math.floor(this.left/60), s=this.left%60; return m+" min "+String(s).padStart(2,"0")+" s"; }
 };
-function alarma(){ [0,300,600,900].forEach(d=>setTimeout(()=>beep(180,.35,"sawtooth",.09),d)); }
+/* S'ha acabat el temps: soroll d'error i pantalla de derrota */
+function perdre(){
+  AMB.stop(false);
+  sLose();
+  document.getElementById("lost").classList.add("on");
+}
+function tancarPerdut(){ document.getElementById("lost").classList.remove("on"); }
 
 /* ==================================================================
    PANTALLES
@@ -852,7 +944,7 @@ const SCREENS = [
 { id:"final", menu:"Final", nota:"Aplaudiments. I aquesta nit, els plats els renta un adult.", html:`
   <div class="center">
     <span class="tag">Missió complerta</span>
-    <h1 style="font-size:7vmin">Els plats<br>us perdonen la vida</h1>
+    <h1 class="winbig" style="font-size:7vmin">Els plats<br>us perdonen la vida</h1>
     <div class="boot" style="text-align:center">
       &gt; protocol NENSRENTAPLATS: <b style="color:var(--red)">DESACTIVAT</b><br>
       &gt; 47 plats reassignats a: <b>ADULTS</b><br>
@@ -1025,14 +1117,19 @@ function lockHTML(s){
 }
 
 function operacioHTML(){
-  const [A,B,C] = VALORS;
+  const [A,B,C] = VALORS, culp = CONFIG.assassins.culpables;
   const passos = `${A}×${B}=${A*B} · ${B}×${C}=${B*C} · ${C}×${A}=${C*A} → ${CODI3}`;
   return `
   <div class="center operation-screen">
     <span class="tag alt">Terminal mestre · Fase 2</span>
     <p class="operation-formula" style="color:var(--green);letter-spacing:.06em;
       text-shadow:0 0 34px rgba(61,255,158,.4)">${CONFIG.operacioText} =</p>
-    <p class="lead" style="color:var(--amber)">A i B són els <b>assassins</b> · C és el <b>lladre</b></p>
+    <div class="cols3" style="max-width:78vmin;margin:.6vmin auto 1.4vmin;gap:2vmin">
+      ${culp.map(x=>`<div class="card" style="text-align:center;padding:1.1vmin 1.4vmin">
+        <div style="font-size:3.8vmin;font-weight:800;color:var(--green);line-height:1.1">${x.lletra} = ${x.valor}</div>
+        <div style="font-size:1.7vmin;color:var(--amber);letter-spacing:.2em;text-transform:uppercase">${x.rol}</div>
+      </div>`).join("")}
+    </div>
     <div class="lockwrap" data-op-body>
       <div>
         <div class="display" data-op-display>${Array.from({length:CODI3.length},()=>'<div class="d">·</div>').join("")}</div>
@@ -1357,6 +1454,7 @@ function show(i){
   document.getElementById("counter").textContent =
     String(i+1).padStart(2,"0") + " / " + String(SCREENS.length).padStart(2,"0");
   document.getElementById("prog").style.width = ((i+1)/SCREENS.length*100)+"%";
+  if(SCREENS[i].id !== "final") FX.neteja();
   const n = SCREENS[i].nota;
   const nb = document.getElementById("notes");
   nb.textContent = n ? "▸ " + n : "";
@@ -1369,6 +1467,10 @@ function show(i){
   if(SCREENS[i].id === "final"){
     GT.pause();
     AMB.stop();
+    tancarPerdut();
+    FX.boom(); sWin();
+    const fl = document.getElementById("flash");
+    fl.classList.remove("go"); void fl.offsetWidth; fl.classList.add("go");
     const r = document.querySelector("#s"+i+" [data-resta]");
     if(r) r.textContent = GT.started ? (GT.left>0 ? GT.restant() : "0 — just a temps!") : "sense rellotge";
   }
@@ -1382,6 +1484,8 @@ touchnav.querySelector('[data-nav="prev"]').onclick = ()=>{ go(state.i-1); sKey(
 touchnav.querySelector('[data-nav="next"]').onclick = ()=>{ go(state.i+1); sKey(); };
 touchnav.querySelector('[data-nav="menu"]').onclick = ()=>
   toggleMenu(!document.getElementById("menu").classList.contains("on"));
+
+document.querySelector("[data-lost-close]").onclick = ()=>{ tancarPerdut(); sKey(); };
 
 let swX = 0, swY = 0, swOn = false;
 stage.addEventListener("touchstart", e=>{
@@ -1407,7 +1511,7 @@ document.addEventListener("keydown", e=>{
     case "Home": go(0); break;
     case "End": go(SCREENS.length-1); break;
     case "m": case "M": toggleMenu(!document.getElementById("menu").classList.contains("on")); break;
-    case "Escape": toggleMenu(false); break;
+    case "Escape": toggleMenu(false); tancarPerdut(); break;
     case "n": case "N": document.getElementById("notes").classList.toggle("on"); break;
     case "s": case "S": soOn = !soOn; if(soOn) sKey(); else AMB.stop(false); break;
     case "b": case "B": AMB.toggle(); break;
