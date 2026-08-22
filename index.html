@@ -964,7 +964,7 @@ const SCREENS = [
   nota:`Fes servir «Torn següent» per rotar el grup que investiga i «Acusació fallada» quan s'equivoquin (−${CONFIG.assassins.penalitzacioMin} min). Prem «Desemmascarat» només quan hagin encertat adult I rol: dona la fitxa i, NOMÉS si el rellotge hi és per sota, el puja al mínim que toca (${CONFIG.assassins.terresMin.join(", ")} min segons si és el primer, el segon o el tercer). Si en queden més, no s'hi toca.` },
 
 { id:"operacio", menu:"⌨ TERMINAL MESTRE · 3 xifres", kind:"operacio",
-  nota:"Que cada xifra la tecleji un nen diferent. El botó de solució és per als adults: no el premis abans d'hora. En encertar-lo NO es desactiva res encara: avança a la superprova." },
+  nota:`Que cada xifra la tecleji un nen diferent. El botó de solució és per als adults: no el premis abans d'hora. En encertar-lo NO es desactiva res encara: la pantalla salta sola a la superprova al cap de 4 segons i allà el rellotge puja a ${CONFIG.minutsSuperprova} min si hi és per sota.` },
 
 { id:"superfinal", menu:"SUPERPROVA · Piscina",
   garanteixAlEntrar:()=>CONFIG.minutsSuperprova,
@@ -1419,6 +1419,8 @@ function wire(s, root){
         root.querySelector("[data-op-body]").classList.add("hidden");
         root.querySelector("[data-op-unlocked]").classList.remove("hidden");
       }, 700);
+      // deixa llegir l'accés concedit i passa a la superprova, que aplica el seu terra
+      setTimeout(()=>go(state.i + 1), 4200);
     };
     root.querySelector("[data-op-sol]").onclick = e=>{
       root.querySelector("[data-op-passos]").classList.remove("hidden");
