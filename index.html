@@ -458,6 +458,9 @@ const CONFIG = {
   //      Mai no resta: si en tenen més, no s'hi toca.
   minutsFaseFinal: 30,
 
+  // ---- Terra garantit en arribar a la superprova de la piscina.
+  minutsSuperprova: 5,
+
   // ---- Prova final: LA RONDA DELS ASSASSINS.
   //      Tres adults culpables, cadascun amb una fitxa amb el seu valor.
   //      Cal desemmascarar-los tots tres per poder fer l'operació.
@@ -943,7 +946,7 @@ const SCREENS = [
   </div>`},
 
 { id:"terminal4", menu:"⌨ TERMINAL 1 · 4 xifres", kind:"lock", digits:4, code:()=>CODI4,
-  garanteix:()=>CONFIG.minutsFaseFinal,
+  garanteixAlCodi:()=>CONFIG.minutsFaseFinal,
   nota:`En encertar el codi, el rellotge puja sol fins a ${CONFIG.minutsFaseFinal} min si hi és per sota, perquè la ronda dels assassins tingui temps. Si en queden més, no s'hi toca.`,
   titol:"Codi de desactivació · Fase 1",
   revelacio:`<h2 style="margin-top:2vmin">Fase 1 desbloquejada</h2>
@@ -959,15 +962,18 @@ const SCREENS = [
   nota:`Fes servir «Torn següent» per rotar el grup que investiga i «Acusació fallada» quan s'equivoquin (−${CONFIG.assassins.penalitzacioMin} min). Prem «Desemmascarat» només quan hagin encertat adult I rol: dona la fitxa i suma ${CONFIG.assassins.minutsCulpable} minuts al rellotge.` },
 
 { id:"operacio", menu:"⌨ TERMINAL MESTRE · 3 xifres", kind:"operacio",
-  nota:"Que cada xifra la tecleji un nen diferent. El botó de solució és per als adults: no el premis abans d'hora." },
+  nota:"Que cada xifra la tecleji un nen diferent. El botó de solució és per als adults: no el premis abans d'hora. En encertar-lo NO es desactiva res encara: avança a la superprova." },
 
-{ id:"superfinal", menu:"SUPERPROVA · Piscina", nota:"Prepareu la piscina i superviseu sempre l'activitat. Han de recuperar totes les polseres de colors.", html:`
+{ id:"superfinal", menu:"SUPERPROVA · Piscina",
+  garanteixAlEntrar:()=>CONFIG.minutsSuperprova,
+  nota:`Prepareu la piscina i superviseu sempre l'activitat. Han de recuperar totes les polseres de colors. En obrir aquesta pantalla el rellotge puja sol fins a ${CONFIG.minutsSuperprova} min si hi és per sota.`, html:`
   <div class="center">
-    <span class="tag alt">SUPERPROVA</span>
+    <span class="tag alt">SUPERPROVA · última barrera</span>
     <h2>Recupereu les polseres</h2>
     <p class="lead">Totes les polseres de colors són dins de la piscina.</p>
     <p class="big" style="color:var(--amber)">Recupereu-les totes abans que s'acabi el temps.</p>
-    <p class="dim">Quan les tingueu, el Protocol NENSRENTAPLATS quedarà desactivat.</p>
+    <p class="dim">Només llavors el Protocol NENSRENTAPLATS quedarà desactivat.</p>
+    <p class="big hidden" data-bonus-entrada style="color:var(--green);margin-top:2vmin"></p>
   </div>`},
 
 { id:"final", menu:"Final", nota:"Aplaudiments. I aquesta nit, els plats els renta un adult.", html:`
@@ -1177,8 +1183,9 @@ function operacioHTML(){
       </div>
     </div>
     <div class="unlocked hidden" data-op-unlocked>
-      <div class="msg">✔ Accés concedit</div>
-      <p class="big" style="margin-top:2vmin">Protocol NENSRENTAPLATS <b style="color:var(--red)">DESACTIVAT</b></p>
+      <div class="msg">✔ Codi mestre acceptat</div>
+      <p class="big" style="margin-top:2vmin">Accés concedit al <b style="color:var(--amber)">nucli del protocol</b></p>
+      <p class="lead" style="margin-top:1.2vmin">Però encara no està desactivat: queda <b>l'última barrera</b>.</p>
     </div>
   </div>`;
 }
@@ -1450,8 +1457,8 @@ function wire(s, root){
           root.querySelector("[data-unlocked]").classList.remove("hidden");
           // reserva de temps per a la fase final
           const bonus = root.querySelector("[data-bonus]");
-          if(s.garanteix && bonus){
-            const objectiu = s.garanteix(), afegits = GT.garanteix(objectiu);
+          if(s.garanteixAlCodi && bonus){
+            const objectiu = s.garanteixAlCodi(), afegits = GT.garanteix(objectiu);
             bonus.textContent = afegits > 0
               ? "⏱ RESERVA D'EMERGÈNCIA ALLIBERADA · +" + afegits + " min → " + objectiu + " minuts"
               : "⏱ Us queden " + Math.floor(GT.left/60) + " minuts. No cal reserva.";
@@ -1489,6 +1496,7 @@ function drawRail(){
 
 /* ---------- navegació ---------- */
 let navSound = false;
+const terresAplicats = new Set();
 function show(i){
   if(navSound && i !== state.i) sNav(i > state.i ? 1 : -1);
   document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
@@ -1502,6 +1510,17 @@ function show(i){
   const nb = document.getElementById("notes");
   nb.textContent = n ? "▸ " + n : "";
   nb.style.visibility = n ? "visible" : "hidden";
+  // terra de temps en entrar a certes pantalles (una sola vegada)
+  const gar = SCREENS[i].garanteixAlEntrar;
+  if(gar && !terresAplicats.has(SCREENS[i].id)){
+    terresAplicats.add(SCREENS[i].id);
+    const afegits = GT.garanteix(gar());
+    const av = document.querySelector("#s" + i + " [data-bonus-entrada]");
+    if(afegits > 0){
+      if(av){ av.textContent = "⏱ TEMPS D'EMERGÈNCIA · +" + afegits + " min"; av.classList.remove("hidden"); }
+      sweep(300,1500,.7,"triangle",.05);
+    }
+  }
   // la música s'espesseix a la prova final
   AMB.mood(["assassins","rondes","operacio"].includes(SCREENS[i].id));
   // el rellotge arrenca sol en sortir de la cerca de polseres
