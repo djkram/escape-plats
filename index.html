@@ -474,6 +474,9 @@ const CONFIG = {
       { lletra:"C", rol:"El lladre", gest:"treu la llengua", valor:5 }
     ],
     minutsCulpable: 3,          // minuts que guanyen per cada culpable desemmascarat
+    // Terra de rellotge després del 1r, 2n i 3r culpable caçat. Si el rellotge
+    // hi és per sota, hi puja; si en tenen més, no s'hi toca.
+    terresMin: [20, 10, 5],
     penalitzacioMin: 2          // minuts que costa una acusació fallada
   },
   operacioText: "A × B + B × C + C × A",
@@ -959,7 +962,7 @@ const SCREENS = [
   nota:"Els tres culpables es combinen EN SECRET qui actua a cada ronda. Mai no actuïn sobre el grup que està investigant. Els controladors poden fer teatre de sospitosos per despistar." },
 
 { id:"rondes", menu:"Tauler d'investigació", kind:"rondes",
-  nota:`Fes servir «Torn següent» per rotar el grup que investiga i «Acusació fallada» quan s'equivoquin (−${CONFIG.assassins.penalitzacioMin} min). Prem «Desemmascarat» només quan hagin encertat adult I rol: dona la fitxa i suma ${CONFIG.assassins.minutsCulpable} minuts al rellotge.` },
+  nota:`Fes servir «Torn següent» per rotar el grup que investiga i «Acusació fallada» quan s'equivoquin (−${CONFIG.assassins.penalitzacioMin} min). Prem «Desemmascarat» només quan hagin encertat adult I rol: dona la fitxa, suma ${CONFIG.assassins.minutsCulpable} minuts i, si cal, puja el rellotge al mínim de la fase (${CONFIG.assassins.terresMin.join(", ")} min segons si és el primer, el segon o el tercer).` },
 
 { id:"operacio", menu:"⌨ TERMINAL MESTRE · 3 xifres", kind:"operacio",
   nota:"Que cada xifra la tecleji un nen diferent. El botó de solució és per als adults: no el premis abans d'hora. En encertar-lo NO es desactiva res encara: avança a la superprova." },
@@ -1108,7 +1111,7 @@ function rondesHTML(){
         <li>Una sola <b>acció secreta</b>: una mort o un robatori.</li>
         <li><b>Una acusació</b> per ronda: quin adult i quin rol.</li>
         <li>Hi calen <b>2 vots</b> del grup com a mínim.</li>
-        <li>Encert: <b style="color:var(--green)">+${rec} min</b> i la fitxa del culpable.</li>
+        <li>Encert: <b style="color:var(--green)">+${rec} min</b>, la fitxa i un mínim de rellotge (${CONFIG.assassins.terresMin.join(" · ")} min).</li>
         <li>Errada: <b style="color:var(--red)">−${pen} min</b> i passa el torn.</li>
       </ul>
     </div>
@@ -1374,16 +1377,25 @@ function wire(s, root){
       sErr();
       rota();
     };
+    let atrapats = 0;
     root.querySelectorAll("[data-revelar]").forEach(button=>button.onclick=()=>{
       const card = root.querySelector('[data-card="' + button.dataset.revelar + '"]');
       card.querySelector("[data-valor]").classList.remove("hidden");
       card.style.borderColor = "var(--green)";
       button.disabled = true;
+      atrapats++;
+
       const guanyats = CONFIG.assassins.minutsCulpable;
-      GT.add(guanyats);
-      button.textContent = "Desemmascarat ✔ +" + guanyats + " min";
+      GT.add(guanyats);                                        // premi fix
+      const terra = CONFIG.assassins.terresMin[atrapats - 1];  // i terra segons l'ordre
+      const pujat = terra == null ? 0 : GT.garanteix(terra);
+
+      button.textContent = pujat > 0
+        ? "✔ +" + guanyats + " min · mínim " + terra
+        : "✔ +" + guanyats + " min";
       sOk();
       sweep(400,1300,.45,"triangle",.045);
+      if(pujat > 0) setTimeout(()=>sweep(300,1500,.6,"triangle",.05), 300);
     });
   }
   if(s.kind==="operacio"){
