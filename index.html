@@ -177,7 +177,13 @@ button{font-family:var(--mono);cursor:pointer}
 #lost h1{color:var(--red);text-shadow:0 0 7vmin rgba(255,77,94,.65);
   animation:pop .7s cubic-bezier(.2,1.6,.4,1) both}
 #lost .tag{background:none;color:var(--red);border:1px solid var(--red)}
+#lost h1{font-size:11vmin}
 #lost p{margin-top:2.4vmin}
+#lost .big{color:var(--red);font-size:5.4vmin;text-transform:uppercase;letter-spacing:.06em}
+#lost .boot{color:#c07680;text-align:left;margin-top:3.4vmin}
+#lost .boot b{color:var(--red)}
+#lost .blink-cursor::after{color:var(--red)}
+#lost .btnrow{margin-top:3.6vmin}
 #lost .btnrow button{border-color:rgba(255,77,94,.55);color:var(--red)}
 #lost .btnrow button:hover{border-color:var(--red);background:rgba(255,77,94,.12)}
 .winbig{animation:pop .8s cubic-bezier(.2,1.6,.4,1) both}
@@ -393,10 +399,15 @@ button{font-family:var(--mono);cursor:pointer}
 <canvas id="fx"></canvas>
 <div id="flash"></div>
 <div id="lost">
-  <span class="tag">Temps esgotat</span>
-  <h1>Heu perdut</h1>
-  <p class="big">El Protocol NENSRENTAPLATS s'ha executat.</p>
-  <p class="lead dim">47 plats, 36 gots i 3 olles cremades us esperen a la cuina.</p>
+  <span class="tag">Protocol NENSRENTAPLATS · executat</span>
+  <h1>Temps<br>esgotat</h1>
+  <p class="big">Us toca rentar els plats.</p>
+  <div class="boot">
+    &gt; el rellotge ha arribat a <b>ZERO</b><br>
+    &gt; 47 plats, 36 gots i 3 olles cremades<br>
+    &gt; assignats a: <b>ELS 12 NENS</b><br>
+    &gt; aquesta nit us espera la pica<span class="blink-cursor"></span>
+  </div>
   <div class="btnrow"><button class="btn" data-lost-close type="button">▸ Continuar igualment</button></div>
 </div>
 
