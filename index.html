@@ -453,6 +453,11 @@ const CONFIG = {
   // ---- Minuts totals del compte enrere (s'activa en trobar les polseres)
   minutsTotals: 60,
 
+  // ---- Terra garantit per a la fase final. En encertar el codi de fase 1,
+  //      si al rellotge li queda menys que això, se li puja fins aquí.
+  //      Mai no resta: si en tenen més, no s'hi toca.
+  minutsFaseFinal: 30,
+
   // ---- Prova final: LA RONDA DELS ASSASSINS.
   //      Tres adults culpables, cadascun amb una fitxa amb el seu valor.
   //      Cal desemmascarar-los tots tres per poder fer l'operació.
@@ -713,6 +718,16 @@ const GT = {
     if(this.left > 0) tancarPerdut();
     this.paint();
   },
+  /* Puja el rellotge fins a `m` minuts si hi és per sota. Torna els minuts afegits. */
+  garanteix(m){
+    const objectiu = m*60;
+    if(this.left >= objectiu) return 0;
+    const afegits = Math.round((objectiu - this.left)/60);
+    this.left = objectiu;
+    tancarPerdut();
+    this.paint();
+    return afegits;
+  },
   tick(){
     this.left--; this.up++;
     sTic();
@@ -927,12 +942,14 @@ const SCREENS = [
   </div>`},
 
 { id:"terminal4", menu:"⌨ TERMINAL 1 · 4 xifres", kind:"lock", digits:4, code:()=>CODI4,
-  nota:"Deixa que un nen tecleji. 3 errors → apareix el botó de PISTA.",
+  garanteix:()=>CONFIG.minutsFaseFinal,
+  nota:`En encertar el codi, el rellotge puja sol fins a ${CONFIG.minutsFaseFinal} min si hi és per sota, perquè la ronda dels assassins tingui temps. Si en queden més, no s'hi toca.`,
   titol:"Codi de desactivació · Fase 1",
   revelacio:`<h2 style="margin-top:2vmin">Fase 1 desbloquejada</h2>
     <p class="lead">El protocol allibera l'últim fitxer: <b>LA RONDA DELS ASSASSINS</b>.</p>
     <p class="lead">Entre els adults hi ha <b>tres culpables</b>, i cadascun guarda un número.
-      Desemmascareu-los tots tres i tindreu el <b>codi mestre</b>.</p>`},
+      Desemmascareu-los tots tres i tindreu el <b>codi mestre</b>.</p>
+    <p class="big hidden" data-bonus style="color:var(--amber);margin-top:2vmin"></p>`},
 
 { id:"assassins", menu:"Prova final · Els assassins", kind:"assassins",
   nota:"Els tres culpables es combinen EN SECRET qui actua a cada ronda. Mai no actuïn sobre el grup que està investigant. Els controladors poden fer teatre de sospitosos per despistar." },
@@ -1426,6 +1443,16 @@ function wire(s, root){
         setTimeout(()=>{
           box.classList.add("hidden");
           root.querySelector("[data-unlocked]").classList.remove("hidden");
+          // reserva de temps per a la fase final
+          const bonus = root.querySelector("[data-bonus]");
+          if(s.garanteix && bonus){
+            const objectiu = s.garanteix(), afegits = GT.garanteix(objectiu);
+            bonus.textContent = afegits > 0
+              ? "⏱ RESERVA D'EMERGÈNCIA ALLIBERADA · +" + afegits + " min → " + objectiu + " minuts"
+              : "⏱ Us queden " + Math.floor(GT.left/60) + " minuts. No cal reserva.";
+            bonus.classList.remove("hidden");
+            if(afegits > 0) sweep(300,1500,.7,"triangle",.05);
+          }
         }, 700);
       } else {
         fails++;
