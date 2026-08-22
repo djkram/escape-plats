@@ -531,7 +531,7 @@ const AMB = {
 
       this.master = actx.createGain();
       this.master.gain.setValueAtTime(0, t);
-      this.master.gain.linearRampToValueAtTime(.035, t + 5);
+      this.master.gain.linearRampToValueAtTime(.05, t + 2.2);
       this.master.connect(actx.destination);
 
       this.filt = actx.createBiquadFilter();
@@ -1210,7 +1210,7 @@ function wire(s, root){
       flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
       root.querySelector("[data-playwrap]").classList.add("hidden");
       root.querySelector("[data-boot]").classList.remove("hidden");
-      setTimeout(()=>AMB.start(), 1100);   // la música entra amb la informació inicial
+      AMB.start();                         // la música ja sona a la pantalla d'ESCAPE PLATS
     };
   }
   if(root.querySelector("[data-startclock]")){
